@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore; // <--- AGREGADO
 using ProdeMundial.Infrastructure;     // <--- AGREGADO (Asegúrate de que este sea el namespace de tu ApplicationDbContext)
 using ProdeMundial.Web;
 using ProdeMundial.Web.Components;
+using ProdeMundial.Web.Hubs;
 using ProdeMundial.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,9 @@ builder.Services.AddSingleton<IMatchService, MatchService>();
 //Servicio de Sesion de Usuario 
 //builder.Services.AddSingleton<UserSession>();
 builder.Services.AddScoped<UserSession>();
+
+//Servicio de SignalR
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -80,5 +84,6 @@ using (var scope = app.Services.CreateScope())
         // Opcional: podrías decidir si la app debe seguir corriendo o no
     }
 }
+app.MapHub<TournamentHub>("/tournamentHub");
 
 app.Run();

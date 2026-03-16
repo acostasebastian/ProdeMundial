@@ -5,6 +5,10 @@
 @inject IMatchService MatchService
 @inject UserSession Session
 @inject IJSRuntime JSRuntime
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+@inject NavigationManager NavigationManager
+
 
 <PageTitle>Ranking - Porra Mundial 2026</PageTitle>
 
@@ -136,6 +140,9 @@
 @code {
     private List<UserRanking>? ranking = new();
 
+    private HubConnection? hubConnection;
+    private List<UserRanking> rankings; // Lista de Rankings
+
     protected override async Task OnInitializedAsync()
     {
         // 1. Nos suscribimos al evento del servicio (Cuando el Admin cambia resultados)
@@ -145,6 +152,26 @@
         Session.OnUserChanged += HandleRefresh;
 
         await LoadRanking();
+
+
+        // 2.Configurar el túnel
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/tournamentHub"))
+            .Build();
+
+        // 3. Escuchar el aviso del Admin
+        hubConnection.On<int>("PartidoFinalizado", async (matchId) =>
+        {
+            // Cuando un partido termina, recalculamos el ranking
+            await LoadRanking();
+            
+            // Opcional: Podrías tirar un confeti pequeño si el usuario actual
+            // está en el puesto #1 después de la actualización.
+            
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
 
     }    
 
@@ -168,19 +195,27 @@
         StateHasChanged(); // Aseguramos que se vea el cambio
     }
 
-    // Usamos un solo método para refrescar todo
+    // 1. Para eventos que usan Action (sin parámetros)
     private async void HandleRefresh()
     {
-        await InvokeAsync(async () =>
-        {
-            await LoadRanking();
-        });
+        await InvokeAsync(async () => await LoadRanking());
     }
 
-    public void Dispose()
+   
+    public async ValueTask DisposeAsync()
     {
-        // Limpiamos AMBAS suscripciones usando el mismo método que pusimos arriba
+        /// Limpiamos la suscripción del MatchService (que es Action)
         MatchService.OnResultUpdated -= HandleRefresh;
+
+        // Limpiamos la de Session        
         Session.OnUserChanged -= HandleRefresh;
+
+        // Cerramos SignalR
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
+
+   
 }

@@ -1,11 +1,13 @@
 ﻿@page "/"
-
+@using Microsoft.AspNetCore.SignalR.Client
 @using ProdeMundial.Domain.Entities
 @using ProdeMundial.Web.Services
 @inject IMatchService MatchService
 @inject UserSession Session
 @implements IDisposable
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
 
 
 <PageTitle>Mundial 2026 - Mis Predicciones</PageTitle>
@@ -158,22 +160,60 @@
     private List<Prediction> myPredictions = new();
     private Dictionary<int, string> errorMessages = new();
 
+    private HubConnection? hubConnection;
+
     //Boton de SaveAll
     private bool isSavingAll = false;
     private string globalMessage = "";
-
+   
     protected override async Task OnInitializedAsync()
     {
-        // 1. Nos suscribimos al evento para que reaccione al cambio de usuario
         Session.OnUserChanged += HandleUserChanged;
-
         MatchService.OnPredictionsCleared += HandleUserChanged;
-
         MatchService.OnResultUpdated += HandleUserChanged;
 
-        // 2. Cargamos los datos por primera vez
+        // Configuración de SignalR
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/tournamentHub"))
+            .Build();
+
+       
+        hubConnection.On<int>("PartidoFinalizado", async (matchId) =>
+{
+    // 1. OBLIGATORIO: Recargar datos para tener los nuevos resultados de la DB
+    await LoadData();
+
+    // 2. Buscamos el partido actualizado en la lista que cargó LoadData
+    var partidoEncontrado = matches?.FirstOrDefault(m => m.Id == matchId);
+    
+    // 3. Buscamos el pronóstico que el usuario ya tenía cargado en la lista
+    // Nota: Asegurate que 'predictions' sea la lista que usás en el Home
+    var miPronostico = myPredictions?.FirstOrDefault(p => p.MatchId == matchId);
+
+    if (partidoEncontrado != null && miPronostico != null)
+    {
+        // Comparación de Goles (Acierto Exacto)
+        bool acertoExacto = partidoEncontrado.HomeScore == miPronostico.PredictedHomeScore &&
+                            partidoEncontrado.AwayScore == miPronostico.PredictedAwayScore;
+
+        if (acertoExacto)
+        {
+            await JS.InvokeVoidAsync("confetti", new
+            {
+                particleCount = 150,
+                spread = 70,
+                origin = new { y = 0.6 },
+                zIndex = 9999
+            });
+        }
+    }
+    
+    // 4. Refrescamos la UI
+    await InvokeAsync(StateHasChanged);
+});
+
+        await hubConnection.StartAsync();
         await LoadData();
-        
     }
 
     // Función auxiliar para saber si el partido ya fue pronosticado
@@ -191,7 +231,7 @@
         var home = homeScores[matchId];
         var away = awayScores[matchId];
 
-        // Validación: entre 0 y 20 
+        // Validación: entre 0 y 20
         if (home < 0 || away < 0 || home > 20 || away > 20)
         {
             errorMessages[matchId] = "❌ Los goles deben estar entre 0 y 20";
@@ -234,7 +274,7 @@
     }
 
     private async void HandleUserChanged()
-    {      
+    {
         // Este código se ejecuta cuando eliges a alguien en el combo del MainLayout
         await InvokeAsync(async () =>
         {
@@ -247,13 +287,13 @@
             // Lógica de detección de acierto exacto
             bool huboAciertoExacto = false;
 
-        // // Si algún partido acaba de terminarse y el usuario acertó exacto... ¡Confeti!
+            // // Si algún partido acaba de terminarse y el usuario acertó exacto... ¡Confeti!
        
-        //     if (myPredictions.Any(p => matches.Any(m => m.Id == p.MatchId && m.IsFinished &&
-        //     m.HomeScore == p.PredictedHomeScore && m.AwayScore == p.PredictedAwayScore)))
-        //     {
-        //         await JS.InvokeVoidAsync("confetti", new { particleCount = 100, spread = 70, origin = new { y = 0.6 } });
-        //     }
+            //     if (myPredictions.Any(p => matches.Any(m => m.Id == p.MatchId && m.IsFinished &&
+            //     m.HomeScore == p.PredictedHomeScore && m.AwayScore == p.PredictedAwayScore)))
+            //     {
+            //         await JS.InvokeVoidAsync("confetti", new { particleCount = 100, spread = 70, origin = new { y = 0.6 } });
+            //     }
 
             foreach (var match in matches.Where(m => m.IsFinished))
             {
@@ -337,56 +377,67 @@
     {
         if (matches == null || !matches.Any()) return;
     
-    isSavingAll = true;
-    errorMessages.Clear();
-    globalMessage = "";
-    bool hasAnyError = false;
-
-    // Solo recorremos partidos que no terminaron
-    foreach (var match in matches.Where(m => !m.IsFinished))
-    {
-        var home = homeScores[match.Id];
-        var away = awayScores[match.Id];
-
-        // Validación de rango
-        if (home < 0 || away < 0 || home > 20 || away > 20)
-        {
-                errorMessages[match.Id] = "❌ Los goles deben estar entre 0 y 20";              
-            hasAnyError = true;
-            continue;
-        }
-
-        try
-        {
-            var prediction = new Prediction
-            {
-                MatchId = match.Id,
-                UserId = Session.CurrentUser,
-                PredictedHomeScore = home,
-                PredictedAwayScore = away
-            };
-
-            await MatchService.SavePredictionAsync(prediction);
-        }
-        catch (Exception)
-        {
-            errorMessages[match.Id] = "Err";
-            hasAnyError = true;
-        }
-    }
-
-    // Refrescamos la lista de predicciones una sola vez al terminar
-    myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser);
-    
-    if (!hasAnyError)
-    {
-        globalMessage = "✅ ¡Todo guardado!";
-        StateHasChanged();
-        await Task.Delay(3000);
+        isSavingAll = true;
+        errorMessages.Clear();
         globalMessage = "";
-    }
+        bool hasAnyError = false;
+
+        // Solo recorremos partidos que no terminaron
+        foreach (var match in matches.Where(m => !m.IsFinished))
+        {
+            var home = homeScores[match.Id];
+            var away = awayScores[match.Id];
+
+            // Validación de rango
+            if (home < 0 || away < 0 || home > 20 || away > 20)
+            {
+                errorMessages[match.Id] = "❌ Los goles deben estar entre 0 y 20";
+                hasAnyError = true;
+                continue;
+            }
+
+            try
+            {
+                var prediction = new Prediction
+                {
+                    MatchId = match.Id,
+                    UserId = Session.CurrentUser,
+                    PredictedHomeScore = home,
+                    PredictedAwayScore = away
+                };
+
+                await MatchService.SavePredictionAsync(prediction);
+            }
+            catch (Exception)
+            {
+                errorMessages[match.Id] = "Err";
+                hasAnyError = true;
+            }
+        }
+
+        // Refrescamos la lista de predicciones una sola vez al terminar
+        myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser);
     
-    isSavingAll = false;
-    StateHasChanged();
+        if (!hasAnyError)
+        {
+            globalMessage = "✅ ¡Todo guardado!";
+            StateHasChanged();
+            await Task.Delay(3000);
+            globalMessage = "";
+        }
+    
+        isSavingAll = false;
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+        // Tu Dispose actual
+        Session.OnUserChanged -= HandleUserChanged;
+        // ... los demás des-registros ...
     }
 }

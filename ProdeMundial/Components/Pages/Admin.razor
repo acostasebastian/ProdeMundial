@@ -1,10 +1,13 @@
 ﻿@page "/admin"
+@using Microsoft.AspNetCore.SignalR
 @using ProdeMundial.Domain.Entities
+@using ProdeMundial.Web.Hubs
 @using ProdeMundial.Web.Services
 @inject IMatchService MatchService
 @inject IJSRuntime JsRuntime
 @inject UserSession Session
 @inject NavigationManager NavManager
+@inject IHubContext<TournamentHub> HubContext
 
 <div class="container mt-4">
     @* <h2 class="mb-4 text-danger"><i class="bi bi-gear-fill"></i> Panel de Administración</h2>
@@ -15,7 +18,7 @@
             <h2 class="display-4 fw-bold text-primary">Porra Mundial 2026</h2>
             <p class="lead">Ingresa tus pronósticos para la oficina.</p>
         </div>
-        ...
+        
     </div>
 
     @if (matches == null)
@@ -24,108 +27,46 @@
     }
     else
     {
-    @*     <div class="list-group shadow-sm">
-            @foreach (var match in matches)
-            {
-                <div class="list-group-item d-flex align-items-center justify-content-between p-3">
-                    <div style="width: 30%; text-align: right;">
-                        <span class="fw-bold">@match.HomeTeam.Name</span>
-                        <img src="@match.HomeTeam.FlagUrl" width="30" class="ms-2" />
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="number" @bind="adminHomeScores[match.Id]" class="form-control text-center" style="width: 60px;" />
-                        <span>-</span>
-                        <input type="number" @bind="adminAwayScores[match.Id]" class="form-control text-center" style="width: 60px;" />
-    
-                        <button class="btn btn-sm btn-danger ms-3" @onclick="() => SaveResult(match.Id)">
-                            Finalizar
-                        </button>
-                    </div>
-
-                    <div style="width: 30%;">
-                        <img src="@match.AwayTeam.FlagUrl" width="30" class="me-2" />
-                        <span class="fw-bold">@match.AwayTeam.Name</span>
-                        @if (match.IsFinished)
-                        {
-                            <span class="badge bg-success ms-2">OK</span>
-                        }
-                    </div>
-                </div>
-            }
-        </div> *@
-
-        <style>
-                /* Estilo del marcador central */
-                .marcador-col {
-                    width: 140px; /* Ancho fijo para que NUNCA se mueva el centro */
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-
-                .equipo-col {
-                    flex: 1; /* Ocupan el espacio sobrante de forma equitativa */
-                    display: flex;
-                    align-items: center;
-                }
-
-                .marcador-input {
-                    width: 45px;
-                    height: 45px;
-                    font-size: 1.2rem;
-                    font-weight: bold;
-                    text-align: center;
-                    border: 2px solid #dee2e6;
-                    border-radius: 8px;
-                    background-color: #f8f9fa;
-                }
-
-                /* Quitar flechitas de los números */
-                input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
-                    -webkit-appearance: none;
-                    margin: 0;
-                }
-
-                .bandera-admin {
-                    width: 30px;
-                    height: 20px;
-                    object-fit: cover;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-                    border-radius: 2px;
-                }
-        </style>
-
         <div class="list-group shadow-sm">
             @foreach (var match in matches)
             {
-                <div class="list-group-item d-flex align-items-center p-2 mb-1 shadow-sm border-0" style="background: #fff;">
+                <div class="list-group-item d-flex align-items-center p-2 p-md-3 mb-2 shadow-sm border rounded">
             
-                    <div class="equipo-col justify-content-end">
-                        <span class="fw-bold me-2 d-none d-md-inline" style="font-size: 0.85rem;">@match.HomeTeam.Name.ToUpper()</span>
-                        <img src="@match.HomeTeam.FlagUrl" class="bandera-admin" />
+                    <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
+                
+                        <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 0;">
+                            <span class="fw-bold me-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                @match.HomeTeam.Name
+                            </span>
+                            <img src="@match.HomeTeam.FlagUrl" width="28" class="shadow-sm rounded flex-shrink-0" />
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-center px-2" style="width: 110px;">
+                            <input type="number" @bind="adminHomeScores[match.Id]" class="marcador-input" style="width: 40px; height: 40px; font-size: 1rem;" />
+                            <span class="mx-1 fw-bold text-muted">-</span>
+                            <input type="number" @bind="adminAwayScores[match.Id]" class="marcador-input" style="width: 40px; height: 40px; font-size: 1rem;" />
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-start" style="flex: 1; min-width: 0;">
+                            <img src="@match.AwayTeam.FlagUrl" width="28" class="shadow-sm rounded flex-shrink-0" />
+                            <span class="fw-bold ms-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                @match.AwayTeam.Name
+                            </span>
+                            @if (match.IsFinished)
+                            {
+                                <i class="bi bi-check-circle-fill text-success ms-1 d-none d-sm-inline"></i>
+                            }
+                        </div>
                     </div>
 
-                    <div class="marcador-col">
-                        <input type="number" @bind="adminHomeScores[match.Id]" class="marcador-input" />
-                        <span class="mx-2 fw-bold text-muted">-</span>
-                        <input type="number" @bind="adminAwayScores[match.Id]" class="marcador-input" />
-                    </div>
-
-                    <div class="equipo-col justify-content-start">
-                        <img src="@match.AwayTeam.FlagUrl" class="bandera-admin" />
-                        <span class="fw-bold ms-2 d-none d-md-inline" style="font-size: 0.85rem;">@match.AwayTeam.Name.ToUpper()</span>
-                        @if (match.IsFinished)
-                        {
-                            <i class="bi bi-check-circle-fill text-success ms-2"></i>
-                        }
-                    </div>
-
-                    <div style="width: 100px;" class="text-end">
-                        <button class="btn btn-sm @(match.IsFinished ? "btn-outline-secondary" : "btn-danger") w-100 fw-bold"
+                    <div class="ms-2 ms-md-3 ps-2 ps-md-3 border-start">
+                        <button class="btn @(match.IsFinished ? "btn-outline-secondary" : "btn-danger") fw-bold btn-sm"
+                                style="width: 70px; font-size: 0.75rem;"
                                 @onclick="() => SaveResult(match.Id)">
-                            @(match.IsFinished ? "FINALIZADO" : "FINALIZAR")
+                            @(match.IsFinished ? "EDITAR" : "LISTO")
                         </button>
                     </div>
+            
                 </div>
             }
         </div>
@@ -139,10 +80,7 @@
             <div class="btn-group shadow-sm">
                 <button class="btn btn-outline-primary" @onclick="SimulateResults">
                     <i class="bi bi-dice-5"></i> Simular Todo
-                </button>
-               @*  <button class="btn btn-outline-danger" @onclick="ResetResults">
-                    <i class="bi bi-trash"></i> Resetear Torneo
-                </button> *@
+                </button>               
                 <button class="btn btn-outline-danger" @onclick="() => showResetModal = true">
                     <i class="bi bi-trash"></i> Resetear Torneo
                 </button>
@@ -190,8 +128,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-           
-        
+
+
         if (Session.CurrentUser?.ToLower() != "sebastian")
         {
             // Si no es Sebastian, lo mandamos de patitas a la Home
@@ -210,12 +148,26 @@
     }
 
     private async Task SaveResult(int id)
-    {
-        // Pasamos los valores de los diccionarios al servicio
+    {   
+
+        // 1. Guardamos en la DB
         await MatchService.UpdateMatchResultAsync(id, adminHomeScores[id], adminAwayScores[id]);
-        
-        // Refrescamos la lista para ver los cambios
-        matches = await MatchService.GetUpcomingMatchesAsync();
+
+        // 2. ACTUALIZACIÓN LOCAL: En lugar de re-pedir toda la lista,
+        // modificamos el partido en la lista actual de la pantalla.
+        var match = matches.FirstOrDefault(m => m.Id == id);
+        if (match != null)
+        {
+            match.IsFinished = true; // Marcamos como terminado para que el botón cambie a "EDITAR"
+            match.HomeScore = adminHomeScores[id];
+            match.AwayScore = adminAwayScores[id];
+        }
+
+        // 3. SignalR: Avisamos a los demás
+        await HubContext.Clients.All.SendAsync("PartidoFinalizado", id);
+
+        // 4. Forzamos a Blazor a redibujar
+        StateHasChanged();
     }
 
 
