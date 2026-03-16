@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="ProdeMundial.Domain/ProdeMundial.Domain.csproj" />
+  <Project Path="ProdeMundial.Infrastructure/ProdeMundial.Infrastructure.csproj" />
+  <Project Path="ProdeMundial/ProdeMundial.Web.csproj" />
+</Solution>

@@ -1,0 +1,392 @@
+﻿@page "/"
+
+@using ProdeMundial.Domain.Entities
+@using ProdeMundial.Web.Services
+@inject IMatchService MatchService
+@inject UserSession Session
+@implements IDisposable
+@inject IJSRuntime JS
+
+
+<PageTitle>Mundial 2026 - Mis Predicciones</PageTitle>
+
+<div class="container mt-4 mb-5">
+    <div class="text-center mb-4">
+        <h1 class="display-5 fw-bold text-dark">🏆 Porra Mundial 2026</h1>
+        <p class="text-muted">Ingresa tus pronósticos para el torneo.</p>
+    </div>
+
+    @if (matches == null)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-dark" role="status"></div>
+            <p class="mt-2">Cargando partidos...</p>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var match in matches)
+            {
+                <div class="col-12 col-md-6 col-lg-4 mb-4">
+                    @* Card con borde lateral si ya tiene predicción *@
+                    <div class="card shadow-sm border-0 h-100 @(HasPrediction(match.Id) ? "border-start border-success border-5" : "")">
+                        
+                        <div class="card-header bg-light border-0 pt-3 d-flex justify-content-between align-items-center">
+                            <span class="badge bg-dark text-white shadow-sm">@match.Phase</span>
+                            <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">
+                                <i class="bi bi-calendar-event me-1"></i>@match.Date.ToString("dd/MM HH:mm") hs
+                            </div>
+                        </div>
+
+                        <div class="card-body py-3">
+                            @if (match.IsFinished)
+                            {
+                                var result = GetPredictionResult(match);
+                                <div class="alert @result.css p-2 mb-3 text-center small fw-bold shadow-sm">
+                                    @result.text (Real: @match.HomeScore - @match.AwayScore)
+                                </div>
+                            }
+
+                            @* Estructura ultra-estable para banderas e inputs *@
+                            <div class="d-flex align-items-center justify-content-center">
+        
+                                @* LOCAL *@
+                                <div class="text-center" style="width: 80px;">
+                                    <img src="@match.HomeTeam.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
+                                    <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
+                                        @match.HomeTeam.Name
+                                    </div>
+                                </div>
+
+                                @* CONTENEDOR CENTRAL DE INPUTS *@
+                                <div class="mx-2 d-flex align-items-center bg-light p-2 rounded-3 border shadow-sm">
+                                    <input type="number" min="0" max="20" @bind="homeScores[match.Id]" disabled="@match.IsFinished"
+                                           class="form-control text-center fw-bold p-0"
+                                           style="width: 45px; height: 45px; font-size: 1.4rem; border: 1px solid #ccc; background: white;" />
+            
+                                    <span class="px-2 fw-bold text-muted">-</span>
+            
+                                    <input type="number" min="0" max="20" @bind="awayScores[match.Id]" disabled="@match.IsFinished"
+                                           class="form-control text-center fw-bold p-0"
+                                           style="width: 45px; height: 45px; font-size: 1.4rem; border: 1px solid #ccc; background: white;" />
+                                </div>
+
+                                @* VISITANTE *@
+                                <div class="text-center" style="width: 80px;">
+                                    <img src="@match.AwayTeam.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
+                                    <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
+                                        @match.AwayTeam.Name
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-white border-0 pb-3 px-3">
+                            @if (!match.IsFinished)
+                            {
+                                <button class="btn @(HasPrediction(match.Id) ? "btn-outline-success" : "btn-dark") w-100 py-2 fw-bold shadow-sm"
+                                        @onclick="() => Save(match.Id)">
+                                    @if (HasPrediction(match.Id))
+                                    {
+                                        <span><i class="bi bi-arrow-repeat me-1"></i> Actualizar</span>
+                                    }
+                                    else
+                                    {
+                                        <span><i class="bi bi-save me-1"></i> Guardar Pronóstico</span>
+                                    }
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-light w-100 py-2 disabled text-muted border">
+                                    Partido Finalizado
+                                </button>
+                            }
+
+                            <!-- Mensaje de Éxito -->
+                            @if (showSuccessId == match.Id)
+                            {
+                                <div class="text-success text-center small fw-bold mt-2 animate__animated animate__pulse">
+                                    ✅ ¡Guardado correctamente!
+                                </div>
+                            }
+
+                            <!--  Mensaje de ERROR de validación -->
+                            @if (errorMessages.ContainsKey(match.Id) && !string.IsNullOrEmpty(errorMessages[match.Id]))
+                            {
+                                <div class="text-danger small fw-bold mt-2 animate__animated animate__shakeX">
+                                    @errorMessages[match.Id]
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<div class="floating-btn-container">
+    @if (!string.IsNullOrEmpty(globalMessage))
+    {
+        <div class="alert alert-success py-1 px-3 mb-2 shadow-sm animate__animated animate__fadeInUp" style="font-size: 0.8rem;">
+            @globalMessage
+        </div>
+    }
+
+    <button class="btn btn-success btn-floating" @onclick="SaveAll" disabled="@isSavingAll" title="Guardar todo">
+        @if (isSavingAll)
+        {
+            <span class="spinner-border spinner-border-sm"></span>
+        }
+        else
+        {
+            <i class="bi bi-cloud-check-fill"></i>
+            <span class="d-none d-md-inline ms-2">Guardar Todo</span>
+        }
+    </button>
+</div>
+
+
+
+@code {
+    private List<Match>? matches;
+    private Dictionary<int, int> homeScores = new();
+    private Dictionary<int, int> awayScores = new();
+
+    private List<Prediction> myPredictions = new();
+    private Dictionary<int, string> errorMessages = new();
+
+    //Boton de SaveAll
+    private bool isSavingAll = false;
+    private string globalMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. Nos suscribimos al evento para que reaccione al cambio de usuario
+        Session.OnUserChanged += HandleUserChanged;
+
+        MatchService.OnPredictionsCleared += HandleUserChanged;
+
+        MatchService.OnResultUpdated += HandleUserChanged;
+
+        // 2. Cargamos los datos por primera vez
+        await LoadData();
+        
+    }
+
+    // Función auxiliar para saber si el partido ya fue pronosticado
+    private bool HasPrediction(int matchId) => myPredictions.Any(p => p.MatchId == matchId);
+
+
+    private int showSuccessId = 0; // Para saber qué tarjeta mostrar el mensaje
+
+
+    private async Task Save(int matchId)
+    {
+        // Limpiamos errores previos del partido
+        errorMessages[matchId] = "";
+
+        var home = homeScores[matchId];
+        var away = awayScores[matchId];
+
+        // Validación: entre 0 y 20 
+        if (home < 0 || away < 0 || home > 20 || away > 20)
+        {
+            errorMessages[matchId] = "❌ Los goles deben estar entre 0 y 20";
+            return; // IMPORTANTE: Cortamos acá, no se guarda nada
+        }
+
+        try
+        {
+            var prediction = new Prediction
+            {
+                MatchId = matchId,
+                UserId = Session.CurrentUser,
+                PredictedHomeScore = homeScores[matchId],
+                PredictedAwayScore = awayScores[matchId]
+            };
+
+            await MatchService.SavePredictionAsync(prediction);
+
+            // Actualizamos la lista local de predicciones para que la UI cambie el botón
+            myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser);
+
+        
+            // Mostramos el mensaje de éxito
+            showSuccessId = matchId;
+    
+            // Opcional: desaparecer el mensaje a los 3 segundos
+            StateHasChanged();
+            await Task.Delay(3000);
+            showSuccessId = 0;
+            StateHasChanged();
+
+        }
+        catch (Exception ex)
+        {
+            
+            errorMessages[matchId] = "Hubo un error al guardar.";
+        }
+
+      
+    }
+
+    private async void HandleUserChanged()
+    {      
+        // Este código se ejecuta cuando eliges a alguien en el combo del MainLayout
+        await InvokeAsync(async () =>
+        {
+            // Guardamos las predicciones viejas para comparar si hay un nuevo acierto
+            var oldPredictions = myPredictions.ToList();
+
+            await LoadData(); // Recargamos predicciones del nuevo usuario
+            StateHasChanged(); // Forzamos a la pantalla a dibujarse de nuevo
+
+            // Lógica de detección de acierto exacto
+            bool huboAciertoExacto = false;
+
+        // // Si algún partido acaba de terminarse y el usuario acertó exacto... ¡Confeti!
+       
+        //     if (myPredictions.Any(p => matches.Any(m => m.Id == p.MatchId && m.IsFinished &&
+        //     m.HomeScore == p.PredictedHomeScore && m.AwayScore == p.PredictedAwayScore)))
+        //     {
+        //         await JS.InvokeVoidAsync("confetti", new { particleCount = 100, spread = 70, origin = new { y = 0.6 } });
+        //     }
+
+            foreach (var match in matches.Where(m => m.IsFinished))
+            {
+                var pred = myPredictions.FirstOrDefault(p => p.MatchId == match.Id);
+                if (pred != null)
+                {
+                    // Si es exacto
+                    if (pred.PredictedHomeScore == match.HomeScore &&
+                        pred.PredictedAwayScore == match.AwayScore)
+                    {
+                        // Solo tiramos confeti si antes ese partido NO estaba finalizado
+                        // o si es una carga nueva de datos que el usuario acaba de ver.
+                        huboAciertoExacto = true;
+                    }
+                }
+            }
+
+            if (huboAciertoExacto)
+            {
+                // Llamamos a la función de JS para tirar confeti
+                await JS.InvokeVoidAsync("confetti", new
+                {
+                    particleCount = 150,
+                    spread = 70,
+                    origin = new { y = 0.6 },
+                    colors = new[] { "#26ccff", "#a25afd", "#ff5e7e", "#88ff5a", "#fcff42", "#ffa62d", "#ff36ff" }
+                });
+            }
+        });
+    }
+
+    private async Task LoadData()
+    {
+        matches = await MatchService.GetUpcomingMatchesAsync();
+        // Usamos el usuario que está activo en la sesión
+        myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser);
+
+        // Limpiamos diccionarios antes de cargar los nuevos
+        homeScores.Clear();
+        awayScores.Clear();
+
+        if (matches != null)
+        {
+            foreach (var m in matches)
+            {
+                var existing = myPredictions.FirstOrDefault(p => p.MatchId == m.Id);
+                homeScores[m.Id] = existing?.PredictedHomeScore ?? 0;
+                awayScores[m.Id] = existing?.PredictedAwayScore ?? 0;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        // Muy importante: dejamos de escuchar al cerrar la página para evitar fugas de memoria
+        Session.OnUserChanged -= HandleUserChanged;
+        MatchService.OnPredictionsCleared -= HandleUserChanged; // <--- Limpieza
+        MatchService.OnResultUpdated -= HandleUserChanged;
+    }
+
+    private (string text, string css) GetPredictionResult(Match match)
+    {
+        if (!match.IsFinished || !HasPrediction(match.Id)) return ("", "");
+
+        var pred = myPredictions.First(p => p.MatchId == match.Id);
+    
+        // Lógica de puntos (puedes moverla al servicio si quieres)
+        bool exact = pred.PredictedHomeScore == match.HomeScore && pred.PredictedAwayScore == match.AwayScore;
+    
+        int actualDiff = (match.HomeScore ?? 0) - (match.AwayScore ?? 0);
+        int predDiff = pred.PredictedHomeScore - pred.PredictedAwayScore;
+        bool winner = (actualDiff > 0 && predDiff > 0) || (actualDiff < 0 && predDiff < 0) || (actualDiff == 0 && predDiff == 0);
+
+        if (exact) return ("⭐ ¡Resultado Exacto! (+3 pts)", "alert-success");
+        if (winner) return ("✅ Acertaste Resultado (+1 pt)", "alert-info");
+        return ("❌ No acertaste (0 pts)", "alert-danger");
+    }
+    
+
+    private async Task SaveAll()
+    {
+        if (matches == null || !matches.Any()) return;
+    
+    isSavingAll = true;
+    errorMessages.Clear();
+    globalMessage = "";
+    bool hasAnyError = false;
+
+    // Solo recorremos partidos que no terminaron
+    foreach (var match in matches.Where(m => !m.IsFinished))
+    {
+        var home = homeScores[match.Id];
+        var away = awayScores[match.Id];
+
+        // Validación de rango
+        if (home < 0 || away < 0 || home > 20 || away > 20)
+        {
+                errorMessages[match.Id] = "❌ Los goles deben estar entre 0 y 20";              
+            hasAnyError = true;
+            continue;
+        }
+
+        try
+        {
+            var prediction = new Prediction
+            {
+                MatchId = match.Id,
+                UserId = Session.CurrentUser,
+                PredictedHomeScore = home,
+                PredictedAwayScore = away
+            };
+
+            await MatchService.SavePredictionAsync(prediction);
+        }
+        catch (Exception)
+        {
+            errorMessages[match.Id] = "Err";
+            hasAnyError = true;
+        }
+    }
+
+    // Refrescamos la lista de predicciones una sola vez al terminar
+    myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser);
+    
+    if (!hasAnyError)
+    {
+        globalMessage = "✅ ¡Todo guardado!";
+        StateHasChanged();
+        await Task.Delay(3000);
+        globalMessage = "";
+    }
+    
+    isSavingAll = false;
+    StateHasChanged();
+    }
+}

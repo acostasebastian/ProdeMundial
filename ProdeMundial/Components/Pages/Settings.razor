@@ -1,0 +1,193 @@
+﻿@page "/settings"
+@using ProdeMundial.Domain.Entities
+@using ProdeMundial.Web.Services
+@inject IMatchService MatchService
+@inject UserSession Session
+@inject NavigationManager NavManager
+
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="bi bi-gear-fill"></i> Configuración del Sistema</h2>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white fw-bold">
+                    🎨 Personalización de Marca
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Nombre del Negocio / Bar</label>
+                        <input type="text" class="form-control" @bind="config.CompanyName" placeholder="Ej: Bar Los Amigos" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Logo de la Empresa</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <InputFile OnChange="HandleFileSelected" class="form-control form-control-sm" accept=".jpg,.jpeg,.png" />
+                        </div>
+                        <div class="form-text text-muted">Formatos sugeridos: PNG o JPG (tamaño pequeño).</div>
+
+                        @if (!string.IsNullOrEmpty(config.LogoUrl))
+                        {
+                            @* Usamos la clase logo-preview-container para centrar *@
+                            <div class="logo-preview-container position-relative">
+                                @* Usamos la clase logo-preview-img para darle tamaño y forma *@
+                                <img src="@config.LogoUrl" class="logo-preview-img" alt="Previsualización" />
+                                <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" @onclick="LimpiarLogo">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Descripción del Premio</label>
+                        <textarea class="form-control" rows="3" @bind="config.PrizeDescription" placeholder="Ej: Un barril de cerveza para el 1er puesto"></textarea>
+                    </div>
+                    @if (!string.IsNullOrEmpty(mensajeFeedback))
+                    {
+                        <div class="alert @claseFeedback p-2 text-center small shadow-sm animate__animated animate__fadeIn">
+                            @mensajeFeedback
+                        </div>
+                    }
+
+                    <button class="btn btn-primary w-100" @onclick="GuardarConfig">
+                        <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white fw-bold">
+                    👥 Gestión de Participantes
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Nombre del nuevo usuario..." @bind="nuevoNombre" />
+                        <button class="btn btn-success" @onclick="CrearUsuario">
+                            <i class="bi bi-plus-lg"></i> Crear
+                        </button>
+                    </div>
+                    
+                    <div class="list-group list-group-flush border" style="max-height: 300px; overflow-y: auto;">
+                        @if (usuariosApp == null || !usuariosApp.Any())
+                        {
+                            <div class="p-3 text-center text-muted">No hay usuarios creados</div>
+                        }
+                        else
+                        {
+                            @foreach (var u in usuariosApp)
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>@u.Name</span>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => BorrarUsuario(u.Id)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private TournamentConfig config = new();
+    private List<AppUser> usuariosApp = new();
+    private string nuevoNombre = "";
+    private string mensajeFeedback = "";
+    private string claseFeedback = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        
+        if (Session.CurrentUser?.ToLower() != "sebastian")
+        {
+            // Si no es Sebastian, lo mandamos de patitas a la Home
+            NavManager.NavigateTo("/");
+        }
+
+        config = await MatchService.GetConfigAsync();
+        usuariosApp = await MatchService.GetUsersAsync();
+    }
+
+    private async Task GuardarConfig()
+    {
+        try
+        {
+            await MatchService.UpdateConfigAsync(config);
+        
+            // Configuramos el mensaje de éxito
+            mensajeFeedback = "✅ ¡Configuración guardada correctamente!";
+            claseFeedback = "alert-success";
+        
+            // Notificamos a los demás componentes (Layout, etc.)
+            // Reutilizamos el evento que ya tenemos en el servicio
+            MatchService.NotifyResultUpdated();
+
+            // Limpiamos el mensaje después de 3 segundos
+            StateHasChanged();
+            await Task.Delay(3000);
+            mensajeFeedback = "";
+        }
+        catch (Exception)
+        {
+            mensajeFeedback = "❌ Error al guardar los cambios.";
+            claseFeedback = "alert-danger";
+        }
+    }
+
+    private async Task CrearUsuario()
+    {
+        if (!string.IsNullOrWhiteSpace(nuevoNombre))
+        {
+            await MatchService.AddUserAsync(nuevoNombre);
+            nuevoNombre = "";
+            usuariosApp = await MatchService.GetUsersAsync();
+
+            // Esto hace que el MainLayout refresque su lista de usuarios
+            MatchService.NotifyResultUpdated();
+        }
+    }
+
+    private async Task BorrarUsuario(int id)
+    {
+        await MatchService.DeleteUserAsync(id);
+        usuariosApp = await MatchService.GetUsersAsync();
+    }
+
+    //Subir imagen
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            // Limitamos el tamaño a 2MB para no saturar la DB en la demo
+            if (file.Size > 2 * 1024 * 1024)
+            {
+                mensajeFeedback = "❌ La imagen es muy pesada (máx 2MB)";
+                claseFeedback = "alert-warning";
+                return;
+            }
+
+            var format = file.ContentType;
+            using var stream = file.OpenReadStream(2 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+        
+            // Convertimos a Base64
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            config.LogoUrl = $"data:{format};base64,{base64}";
+        
+            StateHasChanged();
+        }
+    }
+
+    private void LimpiarLogo()
+    {
+        config.LogoUrl = "/img/default-logo.png";
+    }
+}

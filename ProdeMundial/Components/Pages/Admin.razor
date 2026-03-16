@@ -1,0 +1,250 @@
+﻿@page "/admin"
+@using ProdeMundial.Domain.Entities
+@using ProdeMundial.Web.Services
+@inject IMatchService MatchService
+@inject IJSRuntime JsRuntime
+@inject UserSession Session
+@inject NavigationManager NavManager
+
+<div class="container mt-4">
+    @* <h2 class="mb-4 text-danger"><i class="bi bi-gear-fill"></i> Panel de Administración</h2>
+    <p class="text-muted">Carga los resultados oficiales para calcular los puntos.</p> *@
+    <div class="container mt-5">
+        @* Ese mt-5 (margin top 5) bajará un poco el contenido para que no choque con el header *@
+        <div class="text-center mb-4">
+            <h2 class="display-4 fw-bold text-primary">Porra Mundial 2026</h2>
+            <p class="lead">Ingresa tus pronósticos para la oficina.</p>
+        </div>
+        ...
+    </div>
+
+    @if (matches == null)
+    {
+        <p>Cargando partidos...</p>
+    }
+    else
+    {
+    @*     <div class="list-group shadow-sm">
+            @foreach (var match in matches)
+            {
+                <div class="list-group-item d-flex align-items-center justify-content-between p-3">
+                    <div style="width: 30%; text-align: right;">
+                        <span class="fw-bold">@match.HomeTeam.Name</span>
+                        <img src="@match.HomeTeam.FlagUrl" width="30" class="ms-2" />
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="number" @bind="adminHomeScores[match.Id]" class="form-control text-center" style="width: 60px;" />
+                        <span>-</span>
+                        <input type="number" @bind="adminAwayScores[match.Id]" class="form-control text-center" style="width: 60px;" />
+    
+                        <button class="btn btn-sm btn-danger ms-3" @onclick="() => SaveResult(match.Id)">
+                            Finalizar
+                        </button>
+                    </div>
+
+                    <div style="width: 30%;">
+                        <img src="@match.AwayTeam.FlagUrl" width="30" class="me-2" />
+                        <span class="fw-bold">@match.AwayTeam.Name</span>
+                        @if (match.IsFinished)
+                        {
+                            <span class="badge bg-success ms-2">OK</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div> *@
+
+        <style>
+                /* Estilo del marcador central */
+                .marcador-col {
+                    width: 140px; /* Ancho fijo para que NUNCA se mueva el centro */
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+
+                .equipo-col {
+                    flex: 1; /* Ocupan el espacio sobrante de forma equitativa */
+                    display: flex;
+                    align-items: center;
+                }
+
+                .marcador-input {
+                    width: 45px;
+                    height: 45px;
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    text-align: center;
+                    border: 2px solid #dee2e6;
+                    border-radius: 8px;
+                    background-color: #f8f9fa;
+                }
+
+                /* Quitar flechitas de los números */
+                input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+
+                .bandera-admin {
+                    width: 30px;
+                    height: 20px;
+                    object-fit: cover;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                    border-radius: 2px;
+                }
+        </style>
+
+        <div class="list-group shadow-sm">
+            @foreach (var match in matches)
+            {
+                <div class="list-group-item d-flex align-items-center p-2 mb-1 shadow-sm border-0" style="background: #fff;">
+            
+                    <div class="equipo-col justify-content-end">
+                        <span class="fw-bold me-2 d-none d-md-inline" style="font-size: 0.85rem;">@match.HomeTeam.Name.ToUpper()</span>
+                        <img src="@match.HomeTeam.FlagUrl" class="bandera-admin" />
+                    </div>
+
+                    <div class="marcador-col">
+                        <input type="number" @bind="adminHomeScores[match.Id]" class="marcador-input" />
+                        <span class="mx-2 fw-bold text-muted">-</span>
+                        <input type="number" @bind="adminAwayScores[match.Id]" class="marcador-input" />
+                    </div>
+
+                    <div class="equipo-col justify-content-start">
+                        <img src="@match.AwayTeam.FlagUrl" class="bandera-admin" />
+                        <span class="fw-bold ms-2 d-none d-md-inline" style="font-size: 0.85rem;">@match.AwayTeam.Name.ToUpper()</span>
+                        @if (match.IsFinished)
+                        {
+                            <i class="bi bi-check-circle-fill text-success ms-2"></i>
+                        }
+                    </div>
+
+                    <div style="width: 100px;" class="text-end">
+                        <button class="btn btn-sm @(match.IsFinished ? "btn-outline-secondary" : "btn-danger") w-100 fw-bold"
+                                @onclick="() => SaveResult(match.Id)">
+                            @(match.IsFinished ? "FINALIZADO" : "FINALIZAR")
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+    }
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-danger mb-0"><i class="bi bi-gear-fill"></i> Panel de Control</h2>
+        
+            <div class="btn-group shadow-sm">
+                <button class="btn btn-outline-primary" @onclick="SimulateResults">
+                    <i class="bi bi-dice-5"></i> Simular Todo
+                </button>
+               @*  <button class="btn btn-outline-danger" @onclick="ResetResults">
+                    <i class="bi bi-trash"></i> Resetear Torneo
+                </button> *@
+                <button class="btn btn-outline-danger" @onclick="() => showResetModal = true">
+                    <i class="bi bi-trash"></i> Resetear Torneo
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@if (showResetModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">⚠️ Confirmar Reset</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showResetModal = false"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <p class="fs-5">¿Qué deseas resetear exactamente?</p>
+                    <div class="form-check form-switch d-inline-block text-start mb-3">
+                        <input class="form-check-input" type="checkbox" id="checkPred" @bind="deletePredictions">
+                            <label class="form-check-label fw-bold" for="checkPred">¿Borrar también las predicciones de usuarios?</label>
+                        </div>
+                        <p class="text-muted small">Esta acción no se puede deshacer.</p>
+                    </div>
+                    <div class="modal-footer justify-content-center border-0 pb-4">
+                        <button type="button" class="btn btn-secondary px-4" @onclick="() => showResetModal = false">Cancelar</button>
+                        <button type="button" class="btn btn-danger px-4" @onclick="ConfirmReset">Ejecutar Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+@code {
+    private List<Match>? matches;
+    // Usamos dos diccionarios simples para evitar el error de la tupla
+    private Dictionary<int, int> adminHomeScores = new();
+    private Dictionary<int, int> adminAwayScores = new();
+
+    private bool showResetModal = false;
+    private bool deletePredictions = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+           
+        
+        if (Session.CurrentUser?.ToLower() != "sebastian")
+        {
+            // Si no es Sebastian, lo mandamos de patitas a la Home
+            NavManager.NavigateTo("/");
+        }
+
+        matches = await MatchService.GetUpcomingMatchesAsync();
+        if (matches != null)
+        {
+            foreach (var m in matches)
+            {
+                adminHomeScores[m.Id] = m.HomeScore ?? 0;
+                adminAwayScores[m.Id] = m.AwayScore ?? 0;
+            }            
+        }
+    }
+
+    private async Task SaveResult(int id)
+    {
+        // Pasamos los valores de los diccionarios al servicio
+        await MatchService.UpdateMatchResultAsync(id, adminHomeScores[id], adminAwayScores[id]);
+        
+        // Refrescamos la lista para ver los cambios
+        matches = await MatchService.GetUpcomingMatchesAsync();
+    }
+
+
+    private async Task SimulateResults()
+    {
+        if (await JsRuntime.InvokeAsync<bool>("confirm", "¿Quieres simular resultados aleatorios para todos los partidos?"))
+        {
+            await MatchService.SimulateAllMatchesAsync();
+            matches = await MatchService.GetUpcomingMatchesAsync(); // Refrescar lista local
+        }
+    }
+
+    private async Task ResetResults()
+    {
+        if (await JsRuntime.InvokeAsync<bool>("confirm", "ESTO BORRARÁ TODOS LOS RESULTADOS OFICIALES. ¿Continuar?"))
+        {
+            await MatchService.ResetTournamentAsync(deletePredictions);
+            matches = await MatchService.GetUpcomingMatchesAsync(); // Refrescar lista local
+        }
+    }
+
+    private async Task ConfirmReset()
+    {
+        await MatchService.ResetTournamentAsync(deletePredictions);
+        showResetModal = false; // Cerramos el modal
+        
+        // Refrescamos la lista de la pantalla de admin
+        matches = await MatchService.GetUpcomingMatchesAsync();
+        StateHasChanged();
+    }
+}
+}
