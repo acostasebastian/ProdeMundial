@@ -18,13 +18,13 @@ public class Prediction
     [ForeignKey("MatchId")]
     public Match Match { get; set; } = null!;
 
-    [Required]
+    
     [Range(0, 20, ErrorMessage = "El resultado no es realista")]
-    public int PredictedHomeScore { get; set; }
+    public int? PredictedHomeScore { get; set; }
 
-    [Required]
+    
     [Range(0, 20, ErrorMessage = "El resultado no es realista")]
-    public int PredictedAwayScore { get; set; }
+    public int? PredictedAwayScore { get; set; }
 
     public int PointsEarned { get; set; } = 0;
 }

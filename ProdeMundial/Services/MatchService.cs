@@ -77,27 +77,33 @@ namespace ProdeMundial.Web.Services
                 int points = 0;
                 int exacts = 0;
                 var userPredictions = predictions.Where(p => p.UserId == user.Name);
-
+               
                 foreach (var pred in userPredictions)
                 {
                     var match = matches.FirstOrDefault(m => m.Id == pred.MatchId);
-                    if (match != null)
+
+                    // 1. SEGURIDAD: Solo calculamos si el partido terminó Y si el usuario puso AMBOS goles
+                    if (match != null &&
+                        match.HomeScore.HasValue && match.AwayScore.HasValue &&
+                        pred.PredictedHomeScore.HasValue && pred.PredictedAwayScore.HasValue)
                     {
-                        // 1. Validamos que el partido tenga resultado (por si IsFinished falló)
-                        if (match.HomeScore.HasValue && match.AwayScore.HasValue)
+                        // 2. Usamos .Value para extraer el número real del int?
+                        int pHome = pred.PredictedHomeScore.Value;
+                        int pAway = pred.PredictedAwayScore.Value;
+                        int mHome = match.HomeScore.Value;
+                        int mAway = match.AwayScore.Value;
+
+                        // Puntos por resultado exacto (3 pts)
+                        if (pHome == mHome && pAway == mAway)
                         {
-                            // Puntos por resultado exacto (3 pts)
-                            if (pred.PredictedHomeScore == match.HomeScore && pred.PredictedAwayScore == match.AwayScore)
-                            {
-                                points += 3;
-                                exacts += 1; // Sumas uno a una variable temporal 'exacts'
-                            }
-                            // Puntos por acertar ganador o empate (1 pt)
-                            else if (Math.Sign(pred.PredictedHomeScore - pred.PredictedAwayScore) ==
-                                     Math.Sign(match.HomeScore.Value - match.AwayScore.Value))
-                            {
-                                points += 1;
-                            }
+                            points += 3;
+                            exacts += 1;
+                        }
+                        // Puntos por acertar ganador o empate (1 pt)
+                        // Math.Sign funciona perfecto con los .Value
+                        else if (Math.Sign(pHome - pAway) == Math.Sign(mHome - mAway))
+                        {
+                            points += 1;
                         }
                     }
                 }
@@ -110,24 +116,38 @@ namespace ProdeMundial.Web.Services
             .ToList();
 
             return ranking;
-        }
+        }      
 
         private int CalculatePoints(Prediction p)
         {
-            // 1. Resultado Exacto -> 3 puntos
-            if (p.PredictedHomeScore == p.Match.HomeScore && p.PredictedAwayScore == p.Match.AwayScore)
+            // 1. SEGURIDAD: Si el partido no tiene resultado o la predicción está incompleta, 0 puntos.
+            if (p.Match == null ||
+                !p.Match.HomeScore.HasValue || !p.Match.AwayScore.HasValue ||
+                !p.PredictedHomeScore.HasValue || !p.PredictedAwayScore.HasValue)
+            {
+                return 0;
+            }
+
+            // Extraemos los valores reales para trabajar cómodos
+            int pHome = p.PredictedHomeScore.Value;
+            int pAway = p.PredictedAwayScore.Value;
+            int mHome = p.Match.HomeScore.Value;
+            int mAway = p.Match.AwayScore.Value;
+
+            // 2. Resultado Exacto -> 3 puntos
+            if (pHome == mHome && pAway == mAway)
                 return 3;
 
-            // 2. Acertar el signo (Ganador o Empate) -> 1 punto
-            var actualResult = Math.Sign(p.Match.HomeScore.Value - p.Match.AwayScore.Value);
-            var predictedResult = Math.Sign(p.PredictedHomeScore - p.PredictedAwayScore);
+            // 3. Acertar el signo (Ganador o Empate) -> 1 punto
+            var actualResult = Math.Sign(mHome - mAway);
+            var predictedResult = Math.Sign(pHome - pAway);
 
             if (actualResult == predictedResult)
                 return 1;
 
             return 0;
         }
-        
+
 
         public async Task UpdateMatchResultAsync(int matchId, int homeScore, int awayScore)
         {

@@ -124,13 +124,7 @@
     }
 
     private void OnUserChanged(ChangeEventArgs e)
-    {
-        // var selectedUser = e.Value?.ToString();
-        // if (!string.IsNullOrEmpty(selectedUser))
-        // {
-        //     Session.CurrentUser = selectedUser; // <-- ESTO es lo que actualiza a Juan por Sebastian
-        // }
-
+    {    
         var nombreSeleccionado = e.Value?.ToString();
         if (!string.IsNullOrEmpty(nombreSeleccionado))
         {

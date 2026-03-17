@@ -74,15 +74,26 @@
                     <th class="text-end pe-4">Puntos</th>
                 </tr>
             </thead>
-            <tbody>
-                @{
-                    int posicion = 1;
-                }
+            <tbody>              
                 @if (ranking != null)
-                {
-                    @foreach (var r in ranking)
+                {                                 
+                    // 1. Creamos la lista ordenada de forma segura fuera del HTML
+                    var rankingOrdenado = ranking?
+                        .OrderByDescending(u => u.TotalPoints)
+                        .ThenByDescending(u => u.ExactResults)
+                        .ToList() // <--- Convertimos a Lista para que coincida el tipo
+                        ?? new List<UserRanking>(); // <--- Si es null, lista vacía
+
+                    @* El "?" y el "?? new List<...>()" aseguran que si no hay datos, no explote *@
+                    @foreach (var user in rankingOrdenado)
                     {
-                        <tr>
+                        @* Calculamos posición e identificación (exactamente como antes) *@
+                        int posicion = ranking.IndexOf(user) + 1;
+                        bool esMiUsuario = user.UserId.Equals(Session.CurrentUser, StringComparison.OrdinalIgnoreCase);
+
+                        @* Mantenemos tu fila original, solo agregamos table-active si eres Tú *@
+                        <tr class="@(esMiUsuario ? "table-active" : "")">                   
+
                             @* 1. Medallas o Número *@
                             <td class="text-center">
                                 @if (posicion == 1)
@@ -105,28 +116,33 @@
                                     <span class="fw-bold text-muted">@posicion</span>
                                 }
                             </td>
-
-                            @* 2. Nombre del Usuario *@
-                            <td>
-                                <div class="fw-bold text-dark">@r.UserId</div>
+        
+                            <td class="align-middle">
+                                <div class="d-flex flex-column">
+                                    @* Nombre de Usuario (Original) *@
+                                    <span class="@(esMiUsuario ? "fw-bold text-primary" : "")">
+                                        @user.UserId                                     
+                                        @if (esMiUsuario)
+                                        {
+                                            <span class="badge bg-primary rounded-pill ms-1" style="font-size: 0.6rem;">TÚ</span>
+                                        }
+                                    </span>
+                
+                                    @* --- EL PARCHE: Línea de Plenos --- *@
+                                    <span class="text-muted small" style="font-size: 0.7rem; margin-top: -2px;">
+                                        <i class="bi bi-star-fill text-warning me-1" style="font-size: 0.6rem;"></i>
+                                        @user.ExactResults Plenos (@(user.ExactResults * 3) pts)
+                                    </span>
+                                </div>
                             </td>
 
-                            @* 3. Puntaje y Desempate *@
-                            <td class="text-end pe-4">
-                                <span class="badge bg-dark rounded-pill fs-6 text-white" style="background-color: #333 !important;">
-                                    @r.TotalPoints pts
+                            @* Tu Badge de Puntos (Original - Compacto) *@
+                            <td class="text-end align-middle">
+                                <span class="badge @(esMiUsuario ? "bg-primary" : "bg-dark") rounded-pill px-3 py-1 fs-6">
+                                    @user.TotalPoints pts
                                 </span>
-                            
-                                @if (r.ExactResults > 0)
-                                {
-                                    <div class="text-muted" style="font-size: 0.7rem; font-weight: 500;">
-                                        <i class="bi bi-star-fill text-warning me-1"></i>
-                                        @r.ExactResults @(r.ExactResults == 1 ? "exacto" : "exactos")
-                                    </div>
-                                }
                             </td>
                         </tr>
-                        posicion++;
                     }
                 }
             </tbody>
@@ -138,6 +154,7 @@
 
 
 @code {
+
     private List<UserRanking>? ranking = new();
 
     private HubConnection? hubConnection;
