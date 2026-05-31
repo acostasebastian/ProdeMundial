@@ -449,7 +449,25 @@ namespace ProdeMundial.Web.Services
             }
         }
 
+        public async Task<int> ActivateAllPendingUsersAsync(int companyId)
+        {
+            // Buscamos solo los usuarios de ese Tenant (Bar) que estén inactivos y no sean administradores
+            using var context = factory.CreateDbContext();
+            var pendingUsers = await context.AppUsers
+                .Where(u => u.CompanyId == companyId && !u.IsActive && !u.IsAdmin)
+                .ToListAsync();
 
+            if (!pendingUsers.Any()) return 0;
+
+            // Los activamos a todos en memoria
+            foreach (var user in pendingUsers)
+            {
+                user.IsActive = true;
+            }
+
+            // Guardamos los cambios masivos en SQL Server
+            return await context.SaveChangesAsync();
+        }
 
 
     }

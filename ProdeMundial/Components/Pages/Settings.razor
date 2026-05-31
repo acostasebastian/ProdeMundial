@@ -83,6 +83,18 @@
                         }
                         else
                         {
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="fw-bold mb-0">Participantes del Bar</h4>
+    
+                                <!-- Botón de Activación Masiva -->
+                                @if (usuariosApp != null && usuariosApp.Any(u => !u.IsActive))
+                                {
+                                    <button class="btn btn-success btn-sm fw-bold rounded-pill px-3" @onclick="ActivarTodosLosPendientes">
+                                        <i class="bi bi-check-all me-1"></i> Activar Todos los Pendientes
+                                    </button>
+                                }
+                            </div>
+
                             @foreach (var u in usuariosApp)
                             {
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
@@ -204,5 +216,27 @@
         claseFeedback = clase;
         StateHasChanged();
         Task.Delay(3000).ContinueWith(_ => { mensajeFeedback = ""; InvokeAsync(StateHasChanged); });
+    }
+
+    private async Task ActivarTodosLosPendientes()
+    {
+        try
+        {
+            // Llamamos al servicio pasando el ID de la compañía actual de la sesión
+            int totalActivados = await MatchService.ActivateAllPendingUsersAsync(Session.CurrentCompanyId);
+        
+            if (totalActivados > 0)
+            {
+                // Refrescamos la lista local para que impacte visualmente en la pantalla
+                await CargarUsuarios();
+                StateHasChanged();
+            
+                Console.WriteLine($"🚀 Se activaron {totalActivados} usuarios correctamente.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al activar usuarios masivamente: {ex.Message}");
+        }
     }
 }

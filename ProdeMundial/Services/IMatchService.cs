@@ -48,5 +48,7 @@ namespace ProdeMundial.Web.Services
 
         Task RegistrarBarYAdminAsync(Company nuevaEmpresa, AppUser adminUser);
 
+        Task<int> ActivateAllPendingUsersAsync(int companyId);
+
     }
 }
