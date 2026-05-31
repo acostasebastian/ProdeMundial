@@ -1,0 +1,125 @@
+﻿@page "/superadmin"
+@using ProdeMundial.Domain.Entities
+@using ProdeMundial.Web.Services
+@inject IMatchService MatchService
+@inject UserSession Session
+@inject NavigationManager NavManager
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-building-fill-add text-primary me-2"></i> Alta de Bares/Empresas (SaaS)</h2>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-dark text-white fw-bold">🚀 Registrar Nuevo Bar/Empresa y Administrador</div>
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-shop me-2"></i> Datos del Local</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Nombre (*)</label>
+                            <input type="text" class="form-control" @bind="nuevoBar.Name" placeholder="Ej: Bar de Prueba 3" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Código de Invitación (*)</label>
+                            <input type="text" class="form-control" @bind="nuevoBar.InvitationCode" placeholder="Ej: PRUEBA3" />
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <h5 class="fw-bold mb-3 mt-4"><i class="bi bi-person-badge me-2"></i> Datos del Dueño (Admin)</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Nombre Completo (*)</label>
+                            <input type="text" class="form-control" @bind="nuevoAdmin.Name" placeholder="Nombre del encargado" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Teléfono / ID (*) </label>
+                            <input type="text" class="form-control" @bind="nuevoAdmin.PhoneNumber" placeholder="Para el login" />
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">PIN de Acceso (*)</label>
+                        <input type="text" class="form-control" @bind="nuevoAdmin.AccessPin" placeholder="4 dígitos" />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensaje))
+                    {
+                        <div class="alert @claseMensaje animate__animated animate__fadeIn">@mensaje</div>
+                    }
+
+                    <button class="btn btn-primary w-100 py-2 fw-bold" @onclick="ProcesarAlta" disabled="@procesando">
+                        @if (procesando)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        <i class="bi bi-cloud-upload-fill me-2"></i> Dar de Alta Sistema
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="fw-bold text-muted mb-3">CONSEJOS DE SUPERADMIN</h6>
+                    <ul class="small text-muted">
+                        <li>El código de invitación debe ser único para cada bar.</li>
+                        <li>El administrador podrá cambiar su logo y premio más tarde en su propio panel de Settings.</li>
+                        <li>Al darle de alta, el sistema lo logueará automáticamente si es necesario.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Company nuevoBar = new() { MaxUsers = 50, LogoUrl = "/img/default-logo.png" };
+    private AppUser nuevoAdmin = new();
+    private string mensaje = "";
+    private string claseMensaje = "";
+    private bool procesando = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Session.EnsureUserLoadedAsync();
+            if (!Session.IsSuperAdmin) { NavManager.NavigateTo("/"); }
+            StateHasChanged();
+        }
+    }
+
+    private async Task ProcesarAlta()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoBar.Name) || string.IsNullOrWhiteSpace(nuevoBar.InvitationCode) ||
+            string.IsNullOrWhiteSpace(nuevoAdmin.Name) || string.IsNullOrWhiteSpace(nuevoAdmin.PhoneNumber) || string.IsNullOrWhiteSpace(nuevoAdmin.AccessPin))
+        {
+            mensaje = "❌ Completa los campos obligatorios.";
+            claseMensaje = "alert-danger";
+            return;
+        }
+
+        procesando = true;
+        try
+        {
+            await MatchService.RegistrarBarYAdminAsync(nuevoBar, nuevoAdmin);
+            mensaje = "✅ ¡Bar y Administrador creados con éxito!";
+            claseMensaje = "alert-success";
+            
+            // Limpiar formulario
+            nuevoBar = new() { MaxUsers = 50, LogoUrl = "/img/default-logo.png" };
+            nuevoAdmin = new();
+        }
+        catch (Exception ex)
+        {
+            mensaje = "❌ Error: " + ex.Message;
+            claseMensaje = "alert-danger";
+        }
+        finally { procesando = false; }
+    }
+}
+

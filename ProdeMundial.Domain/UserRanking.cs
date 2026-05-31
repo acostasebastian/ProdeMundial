@@ -6,7 +6,9 @@ namespace ProdeMundial.Domain
 {
     public class UserRanking
     {
-        public string UserId { get; set; } = string.Empty;
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+
         public int TotalPoints { get; set; }
         public int ExactResults { get; set; } // Opcional: para desempatar
     }

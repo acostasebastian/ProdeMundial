@@ -31,6 +31,9 @@ builder.Services.AddSingleton<IMatchService, MatchService>();
 //builder.Services.AddSingleton<UserSession>();
 builder.Services.AddScoped<UserSession>();
 
+//Servicio de Guardado de archivos
+builder.Services.AddScoped<IFileService, FileService>();
+
 //Servicio de SignalR
 builder.Services.AddSignalR();
 
@@ -51,15 +54,6 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-//using (var scope = app.Services.CreateScope())
-//{
-//    var services = scope.ServiceProvider;
-//    var context = services.GetRequiredService<ApplicationDbContext>();
-
-//    // Esto aplica las migraciones pendientes automáticamente y carga los datos
-//    context.Database.Migrate();
-//    ProdeMundial.Infrastructure.Data.DbInitializer.Seed(context);
-//}
 
 // BLOQUE DE INICIALIZACIÓN SEGURO
 using (var scope = app.Services.CreateScope())

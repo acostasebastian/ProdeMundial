@@ -9,69 +9,80 @@
 @inject NavigationManager NavManager
 @inject IHubContext<TournamentHub> HubContext
 
-<div class="container mt-4">
-    @* <h2 class="mb-4 text-danger"><i class="bi bi-gear-fill"></i> Panel de Administración</h2>
-    <p class="text-muted">Carga los resultados oficiales para calcular los puntos.</p> *@
+
+<div class="container mt-4">    
     <div class="container mt-5">
         @* Ese mt-5 (margin top 5) bajará un poco el contenido para que no choque con el header *@
         <div class="text-center mb-4">
             <h2 class="display-4 fw-bold text-primary">Porra Mundial 2026</h2>
-            <p class="lead">Ingresa tus pronósticos para la oficina.</p>
+            <p class="lead">Ingresa los resultados de los partidos.</p>
         </div>
         
     </div>
 
-    @if (matches == null)
+    @if (!isReady)
     {
-        <p>Cargando partidos...</p>
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Verificando credenciales de Administrador...</p>
+        </div>
     }
     else
     {
-        <div class="list-group shadow-sm">
-            @foreach (var match in matches)
-            {
-                <div class="list-group-item d-flex align-items-center p-2 p-md-3 mb-2 shadow-sm border rounded">
+        @if (matches == null)
+        {
+            <p>Cargando partidos...</p>
+        }
+        else
+        {
+            <div class="list-group shadow-sm">
+                @foreach (var match in matches)
+                {
+                    <div class="list-group-item d-flex align-items-center p-2 p-md-3 mb-2 shadow-sm border rounded">
             
-                    <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
+                        <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
                 
-                        <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 0;">
-                            <span class="fw-bold me-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                @match.HomeTeam.Name
-                            </span>
-                            <img src="@match.HomeTeam.FlagUrl" width="28" class="shadow-sm rounded flex-shrink-0" />
+                            <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 0;">
+                                <span class="fw-bold me-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    @match.HomeTeam.Name
+                                </span>
+                                <img src="@match.HomeTeam.FlagUrl" width="28" class="shadow-sm rounded flex-shrink-0" />
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-center px-2" style="width: 110px;">
+                                <input type="number" @bind="adminHomeScores[match.Id]" class="marcador-input" style="width: 40px; height: 40px; font-size: 1rem;" />
+                                <span class="mx-1 fw-bold text-muted">-</span>
+                                <input type="number" @bind="adminAwayScores[match.Id]" class="marcador-input" style="width: 40px; height: 40px; font-size: 1rem;" />
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-start" style="flex: 1; min-width: 0;">
+                                <img src="@match.AwayTeam.FlagUrl" width="28" class="shadow-sm rounded flex-shrink-0" />
+                                <span class="fw-bold ms-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    @match.AwayTeam.Name
+                                </span>
+                                @if (match.IsFinished)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success ms-1 d-none d-sm-inline"></i>
+                                }
+                            </div>
                         </div>
 
-                        <div class="d-flex align-items-center justify-content-center px-2" style="width: 110px;">
-                            <input type="number" @bind="adminHomeScores[match.Id]" class="marcador-input" style="width: 40px; height: 40px; font-size: 1rem;" />
-                            <span class="mx-1 fw-bold text-muted">-</span>
-                            <input type="number" @bind="adminAwayScores[match.Id]" class="marcador-input" style="width: 40px; height: 40px; font-size: 1rem;" />
+                        <div class="ms-2 ms-md-3 ps-2 ps-md-3 border-start">
+                            <button class="btn @(match.IsFinished ? "btn-outline-secondary" : "btn-danger") fw-bold btn-sm"
+                                    style="width: 70px; font-size: 0.75rem;"
+                                    @onclick="() => SaveResult(match.Id)">
+                                @(match.IsFinished ? "EDITAR" : "LISTO")
+                            </button>
                         </div>
-
-                        <div class="d-flex align-items-center justify-content-start" style="flex: 1; min-width: 0;">
-                            <img src="@match.AwayTeam.FlagUrl" width="28" class="shadow-sm rounded flex-shrink-0" />
-                            <span class="fw-bold ms-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                @match.AwayTeam.Name
-                            </span>
-                            @if (match.IsFinished)
-                            {
-                                <i class="bi bi-check-circle-fill text-success ms-1 d-none d-sm-inline"></i>
-                            }
-                        </div>
-                    </div>
-
-                    <div class="ms-2 ms-md-3 ps-2 ps-md-3 border-start">
-                        <button class="btn @(match.IsFinished ? "btn-outline-secondary" : "btn-danger") fw-bold btn-sm"
-                                style="width: 70px; font-size: 0.75rem;"
-                                @onclick="() => SaveResult(match.Id)">
-                            @(match.IsFinished ? "EDITAR" : "LISTO")
-                        </button>
-                    </div>
             
-                </div>
-            }
-        </div>
+                    </div>
+                }
+            </div>
 
+        }
     }
+
+  
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -115,7 +126,7 @@
                 </div>
             </div>
         </div>
-    }
+}
 
 @code {
     private List<Match>? matches;
@@ -126,24 +137,52 @@
     private bool showResetModal = false;
     private bool deletePredictions = false;
 
+    // 🔥 NUEVA BANDERA: Evita que el HTML intente dibujar o evaluar antes de tiempo
+    private bool isReady = false;
+
+   
     protected override async Task OnInitializedAsync()
     {
+        
+    }
 
-
-        if (Session.CurrentUser?.ToLower() != "sebastian")
+    // 2. Usamos este método que corre SÓLO cuando el navegador ya está conectado de verdad
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
         {
-            // Si no es Sebastian, lo mandamos de patitas a la Home
-            NavManager.NavigateTo("/");
-        }
+            // Rehidratamos la sesión desde el almacenamiento seguro del navegador
+            await Session.EnsureUserLoadedAsync();
 
-        matches = await MatchService.GetUpcomingMatchesAsync();
-        if (matches != null)
-        {
-            foreach (var m in matches)
+            // Candado estricto de SuperAdmin: Ahora sí es seguro evaluar
+            if (!Session.IsSuperAdmin)
             {
-                adminHomeScores[m.Id] = m.HomeScore ?? 0;
-                adminAwayScores[m.Id] = m.AwayScore ?? 0;
-            }            
+                Console.WriteLine("⛔ ACCESO DENEGADO: Redirigiendo al login...");
+                NavManager.NavigateTo("/login");
+                return;
+            }
+
+            try
+            {
+                // Cargamos los partidos ahora que sabemos que eres tú
+                matches = await MatchService.GetUpcomingMatchesAsync();
+                if (matches != null)
+                {
+                    foreach (var m in matches)
+                    {
+                        adminHomeScores[m.Id] = m.HomeScore ?? 0;
+                        adminAwayScores[m.Id] = m.AwayScore ?? 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ERROR AL CARGAR PARTIDOS EN ADMIN: {ex.Message}");
+            }
+
+            // Marcamos que todo está cargado y seguro, y forzamos el redibujado
+            isReady = true;
+            StateHasChanged();
         }
     }
 
@@ -198,5 +237,4 @@
         matches = await MatchService.GetUpcomingMatchesAsync();
         StateHasChanged();
     }
-}
 }

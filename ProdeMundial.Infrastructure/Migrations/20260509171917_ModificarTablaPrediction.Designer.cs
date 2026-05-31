@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProdeMundial.Infrastructure;
 
@@ -11,9 +12,11 @@ using ProdeMundial.Infrastructure;
 namespace ProdeMundial.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260509171917_ModificarTablaPrediction")]
+    partial class ModificarTablaPrediction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,14 +37,8 @@ namespace ProdeMundial.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("CompanyId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("bit");
@@ -55,8 +52,6 @@ namespace ProdeMundial.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CompanyId");
 
                     b.ToTable("AppUsers");
                 });
@@ -79,9 +74,6 @@ namespace ProdeMundial.Infrastructure.Migrations
 
                     b.Property<string>("LogoUrl")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MaxUsers")
-                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -255,17 +247,6 @@ namespace ProdeMundial.Infrastructure.Migrations
                     b.ToTable("UserCompanies");
                 });
 
-            modelBuilder.Entity("ProdeMundial.Domain.Entities.AppUser", b =>
-                {
-                    b.HasOne("ProdeMundial.Domain.Entities.Company", "Company")
-                        .WithMany()
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Company");
-                });
-
             modelBuilder.Entity("ProdeMundial.Domain.Entities.Match", b =>
                 {
                     b.HasOne("ProdeMundial.Domain.Entities.Team", "AwayTeam")
@@ -288,19 +269,19 @@ namespace ProdeMundial.Infrastructure.Migrations
             modelBuilder.Entity("ProdeMundial.Domain.Entities.Prediction", b =>
                 {
                     b.HasOne("ProdeMundial.Domain.Entities.Company", "Company")
-                        .WithMany()
+                        .WithMany("Predictions")
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ProdeMundial.Domain.Entities.Match", "Match")
                         .WithMany()
                         .HasForeignKey("MatchId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ProdeMundial.Domain.Entities.AppUser", "User")
-                        .WithMany("Predictions")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -333,13 +314,13 @@ namespace ProdeMundial.Infrastructure.Migrations
 
             modelBuilder.Entity("ProdeMundial.Domain.Entities.AppUser", b =>
                 {
-                    b.Navigation("Predictions");
-
                     b.Navigation("UserCompanies");
                 });
 
             modelBuilder.Entity("ProdeMundial.Domain.Entities.Company", b =>
                 {
+                    b.Navigation("Predictions");
+
                     b.Navigation("UserCompanies");
                 });
 #pragma warning restore 612, 618

@@ -1,0 +1,124 @@
+﻿@page "/register"
+@using ProdeMundial.Domain.Entities
+@using ProdeMundial.Web.Services
+@inject IMatchService MatchService
+@inject NavigationManager Nav
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg border-0" style="max-width: 450px; width: 100%;">
+        <div class="card-body p-5 text-center">
+            
+            @if (!registroExitoso)
+            {
+                <h2 class="fw-bold mb-4">📝 Registro</h2>
+                
+                <EditForm Model="@regModel" OnValidSubmit="HandleRegister">
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="regModel.InvitationCode" class="form-control" id="code" placeholder="Código" />
+                        <label>Código de Invitación</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="regModel.Name" class="form-control" placeholder="Nombre" />
+                        <label>Nombre Completo</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="regModel.Identity" class="form-control" placeholder="Email o Teléfono" />
+                        <label>Email o Teléfono móvil</label>
+                        <div class="form-text text-start small ps-2">
+                            Usarás este dato para ingresar siempre.
+                        </div>
+                    </div>
+                    <div class="form-floating mb-4">
+                        <InputText @bind-Value="regModel.Pin" type="password" class="form-control" placeholder="PIN" />
+                        <label>Crea tu PIN (4-6 dígitos)</label>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(msg))
+                    {
+                        <div class="alert alert-danger p-2 small mb-3">@msg</div>
+                    }
+
+                    <button type="submit" class="btn btn-success w-100 py-3 fw-bold rounded-pill">REGISTRARME</button>
+                    <a href="/login" class="btn btn-link mt-3 d-block">Ya tengo cuenta</a>
+                </EditForm>
+            }
+            else
+            {
+                <div class="animate__animated animate__fadeIn">
+                    <div class="text-success mb-3">
+                        <i class="bi bi-check-circle-fill" style="font-size: 3.5rem;"></i>
+                    </div>
+                    <h3 class="fw-bold mb-3 text-success">¡Registro Exitoso!</h3>
+                    
+                    <div class="alert alert-info shadow-sm text-start small border-0 lh-base mb-4" style="background-color: #e3f2fd; color: #0d47a1;">
+                        <i class="bi bi-info-circle-fill me-1"></i> @mensajeInfo
+                    </div>
+
+                    <a href="/login" class="btn btn-primary w-100 py-2.5 fw-bold rounded-pill shadow-sm">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Ir al Login
+                    </a>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterModel regModel = new();
+    private string? msg;
+
+    private string mensajeInfo = "";
+    private bool registroExitoso = false;
+
+    private async Task HandleRegister()
+    {
+        // 1. Validaciones de entrada
+        if (string.IsNullOrWhiteSpace(regModel.Name) || regModel.Name.Length < 3)
+        {
+            msg = "⚠️ El nombre es demasiado corto.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(regModel.Identity) || regModel.Identity.Length < 6)
+        {
+            msg = "⚠️ Ingresa un email o teléfono válido.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(regModel.Pin) || regModel.Pin.Length < 4)
+        {
+            msg = "⚠️ El PIN debe tener al menos 4 dígitos.";
+            return;
+        }
+
+        // 2. Creamos el objeto SIN asignar Email ni Phone aún (lo hará el servicio)
+        var newUser = new AppUser
+        {
+            Name = regModel.Name,
+            AccessPin = regModel.Pin,
+            IsAdmin = false,
+            IsActive = false // Empieza inactivo hasta que el dueño del bar confirme
+        };
+
+        // 3. Llamamos al servicio pasando la "Identidad" cruda
+        var success = await MatchService.RegisterUserAsync(newUser, regModel.InvitationCode, regModel.Identity);
+
+        if (success)
+        {
+            registroExitoso = true;
+            mensajeInfo = "¡Registro completado! ⚽ Tu cuenta ha sido creada, pero se encuentra PENDIENTE de activación. Para empezar a cargar tus pronósticos, abona la inscripción al encargado del bar para que te habilite.";
+        }
+        else
+        {
+            msg = "❌ Código de invitación inválido o error en el registro.";
+        }
+    }
+
+    class RegisterModel {
+        public string InvitationCode { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Identity { get; set; } = "";
+        public string Pin { get; set; } = "";
+    }
+}

@@ -15,7 +15,7 @@ namespace ProdeMundial.Web.Services
 
         Task UpdateMatchResultAsync(int matchId, int homeScore, int awayScore);
 
-        Task<List<Prediction>> GetUserPredictionsAsync(string userId);
+        Task<List<Prediction>> GetUserPredictionsAsync(int userId, int companyId);
 
         Task SimulateAllMatchesAsync();
         Task ResetTournamentAsync(bool deletePredictions);
@@ -25,13 +25,28 @@ namespace ProdeMundial.Web.Services
         Task<List<AppUser>> GetUsersAsync();
         Task AddUserAsync(string name);
         Task DeleteUserAsync(int id);
-        Task<TournamentConfig> GetConfigAsync();
+       
+        Task<Company> GetConfigAsync(int companyId);
         Task UpdateConfigAsync(TournamentConfig config);
 
         void NotifyResultUpdated();
 
+        Task<Company?> GetCompanyByCodeAsync(string code);
+        Task<AppUser?> AuthenticateUserAsync(string identity, string pin);
+
+        Task<List<AppUser>> GetUsersByCompanyAsync(int companyId);
+        Task UpdateUserStatusAsync(AppUser user);
+        Task UpdateCompanyAsync(Company company);
 
 
+        Task<AppUser?> AuthenticateUserWithoutCodeAsync(string identity, string pin);
+        Task<bool> RegisterUserAsync(AppUser user, string invitationCode, string identityInput);
+
+        Task<List<UserRanking>> GetRankingAsync(int companyId);
+
+        Task ToggleUserActiveAsync(int userId, bool isActive);
+
+        Task RegistrarBarYAdminAsync(Company nuevaEmpresa, AppUser adminUser);
 
     }
 }

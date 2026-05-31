@@ -78,20 +78,20 @@
                 @if (ranking != null)
                 {                                 
                     // 1. Creamos la lista ordenada de forma segura fuera del HTML
+                    //El "?" y el "?? new List<...>()" aseguran que si no hay datos, no explote
                     var rankingOrdenado = ranking?
                         .OrderByDescending(u => u.TotalPoints)
                         .ThenByDescending(u => u.ExactResults)
                         .ToList() // <--- Convertimos a Lista para que coincida el tipo
                         ?? new List<UserRanking>(); // <--- Si es null, lista vacía
 
-                    @* El "?" y el "?? new List<...>()" aseguran que si no hay datos, no explote *@
+                    
                     @foreach (var user in rankingOrdenado)
                     {
-                        @* Calculamos posición e identificación (exactamente como antes) *@
-                        int posicion = ranking.IndexOf(user) + 1;
-                        bool esMiUsuario = user.UserId.Equals(Session.CurrentUser, StringComparison.OrdinalIgnoreCase);
-
-                        @* Mantenemos tu fila original, solo agregamos table-active si eres Tú *@
+                        @* Calculamos posición e identificación *@
+                        int posicion = ranking.IndexOf(user) + 1;                        
+                        bool esMiUsuario = Session.CurrentUser != null && user.UserId == Session.CurrentUser.Id;
+                  
                         <tr class="@(esMiUsuario ? "table-active" : "")">                   
 
                             @* 1. Medallas o Número *@
@@ -119,16 +119,16 @@
         
                             <td class="align-middle">
                                 <div class="d-flex flex-column">
-                                    @* Nombre de Usuario (Original) *@
+                                    @* Nombre de Usuario *@
                                     <span class="@(esMiUsuario ? "fw-bold text-primary" : "")">
-                                        @user.UserId                                     
+                                        @user.UserName                                     
                                         @if (esMiUsuario)
                                         {
                                             <span class="badge bg-primary rounded-pill ms-1" style="font-size: 0.6rem;">TÚ</span>
                                         }
                                     </span>
                 
-                                    @* --- EL PARCHE: Línea de Plenos --- *@
+                                    @* --- Línea de Plenos --- *@
                                     <span class="text-muted small" style="font-size: 0.7rem; margin-top: -2px;">
                                         <i class="bi bi-star-fill text-warning me-1" style="font-size: 0.6rem;"></i>
                                         @user.ExactResults Plenos (@(user.ExactResults * 3) pts)
@@ -136,7 +136,7 @@
                                 </div>
                             </td>
 
-                            @* Tu Badge de Puntos (Original - Compacto) *@
+                            @* Puntos *@
                             <td class="text-end align-middle">
                                 <span class="badge @(esMiUsuario ? "bg-primary" : "bg-dark") rounded-pill px-3 py-1 fs-6">
                                     @user.TotalPoints pts
@@ -152,87 +152,102 @@
     }
 </div>
 
-
 @code {
-
     private List<UserRanking>? ranking = new();
-
     private HubConnection? hubConnection;
-    private List<UserRanking> rankings; // Lista de Rankings
+    private bool isReady = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // 1. Nos suscribimos al evento del servicio (Cuando el Admin cambia resultados)
+        // 1. Suscripción a eventos locales de actualización
         MatchService.OnResultUpdated += HandleRefresh;
-        
-        // 2. Nos suscribimos al cambio de usuario (Si lo necesitas en esta página)
         Session.OnUserChanged += HandleRefresh;
-
-        await LoadRanking();
-
-
-        // 2.Configurar el túnel
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/tournamentHub"))
-            .Build();
-
-        // 3. Escuchar el aviso del Admin
-        hubConnection.On<int>("PartidoFinalizado", async (matchId) =>
-        {
-            // Cuando un partido termina, recalculamos el ranking
-            await LoadRanking();
-            
-            // Opcional: Podrías tirar un confeti pequeño si el usuario actual
-            // está en el puesto #1 después de la actualización.
-            
-            await InvokeAsync(StateHasChanged);
-        });
-
-        await hubConnection.StartAsync();
-
-    }    
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("confetti", new
+            // 2. Forzamos a la sesión a despertar y leer el almacenamiento del navegador
+            await Session.EnsureUserLoadedAsync();
+
+            // Candado de seguridad interactivo: Si de verdad no hay nadie, al login
+            if (!Session.IsAuthenticated)
             {
-                particleCount = 150,
-                spread = 70,
-                origin = new { y = 0.6 },
-                zIndex = 999
+                NavigationManager.NavigateTo("/login");
+                return;
+            }
+
+            // 3. Cargamos los datos filtrados por el bar actual
+            await LoadRanking();
+
+            // 4. Tiramos el confeti de bienvenida al Ranking
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("confetti", new
+                {
+                    particleCount = 100,
+                    spread = 60,
+                    origin = new { y = 0.6 },
+                    zIndex = 999
+                });
+            }
+            catch (Exception) { /* Por si JS no está listo */ }
+
+            isReady = true;
+            StateHasChanged();
+
+            // 5. Conectamos SignalR en segundo plano para el tiempo real
+            await ConectarHub();
+        }
+    }
+
+    private async Task ConectarHub()
+    {
+        try
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(NavigationManager.ToAbsoluteUri("/tournamentHub"))
+                .Build();
+
+            hubConnection.On<int>("PartidoFinalizado", async (matchId) =>
+            {
+                // Cuando el admin cierra un partido, recalculamos las posiciones del bar en vivo
+                await LoadRanking();
             });
+
+            await hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("SignalR Error en Ranking: " + ex.Message);
         }
     }
 
     private async Task LoadRanking()
     {
-        ranking = await MatchService.GetRankingAsync();
-        StateHasChanged(); // Aseguramos que se vea el cambio
+        // 🔥 Usamos la propiedad global que nunca falla y está atada al bar actual
+        if (Session.CurrentCompanyId > 0)
+        {
+            ranking = await MatchService.GetRankingAsync(Session.CurrentCompanyId);
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
-    // 1. Para eventos que usan Action (sin parámetros)
     private async void HandleRefresh()
     {
         await InvokeAsync(async () => await LoadRanking());
     }
 
-   
     public async ValueTask DisposeAsync()
     {
-        /// Limpiamos la suscripción del MatchService (que es Action)
+        // Desuscripción limpia de eventos para evitar fugas de memoria
         MatchService.OnResultUpdated -= HandleRefresh;
-
-        // Limpiamos la de Session        
         Session.OnUserChanged -= HandleRefresh;
 
-        // Cerramos SignalR
         if (hubConnection is not null)
         {
             await hubConnection.DisposeAsync();
         }
     }
-
-   
 }

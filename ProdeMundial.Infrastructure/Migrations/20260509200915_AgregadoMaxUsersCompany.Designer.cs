@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProdeMundial.Infrastructure;
 
@@ -11,9 +12,11 @@ using ProdeMundial.Infrastructure;
 namespace ProdeMundial.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260509200915_AgregadoMaxUsersCompany")]
+    partial class AgregadoMaxUsersCompany
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,6 +40,9 @@ namespace ProdeMundial.Infrastructure.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CompanyId1")
+                        .HasColumnType("int");
+
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
@@ -57,6 +63,8 @@ namespace ProdeMundial.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("CompanyId1");
 
                     b.ToTable("AppUsers");
                 });
@@ -148,6 +156,9 @@ namespace ProdeMundial.Infrastructure.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("int");
 
+                    b.Property<int>("CompanyId1")
+                        .HasColumnType("int");
+
                     b.Property<int>("MatchId")
                         .HasColumnType("int");
 
@@ -163,13 +174,20 @@ namespace ProdeMundial.Infrastructure.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int>("UserId1")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
 
+                    b.HasIndex("CompanyId1");
+
                     b.HasIndex("MatchId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("Predictions");
                 });
@@ -257,11 +275,15 @@ namespace ProdeMundial.Infrastructure.Migrations
 
             modelBuilder.Entity("ProdeMundial.Domain.Entities.AppUser", b =>
                 {
-                    b.HasOne("ProdeMundial.Domain.Entities.Company", "Company")
+                    b.HasOne("ProdeMundial.Domain.Entities.Company", null)
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("ProdeMundial.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId1");
 
                     b.Navigation("Company");
                 });
@@ -287,21 +309,33 @@ namespace ProdeMundial.Infrastructure.Migrations
 
             modelBuilder.Entity("ProdeMundial.Domain.Entities.Prediction", b =>
                 {
-                    b.HasOne("ProdeMundial.Domain.Entities.Company", "Company")
+                    b.HasOne("ProdeMundial.Domain.Entities.Company", null)
                         .WithMany()
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("ProdeMundial.Domain.Entities.Company", "Company")
+                        .WithMany("Predictions")
+                        .HasForeignKey("CompanyId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProdeMundial.Domain.Entities.Match", "Match")
                         .WithMany()
                         .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProdeMundial.Domain.Entities.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ProdeMundial.Domain.Entities.AppUser", "User")
-                        .WithMany("Predictions")
-                        .HasForeignKey("UserId")
+                        .WithMany()
+                        .HasForeignKey("UserId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -333,13 +367,13 @@ namespace ProdeMundial.Infrastructure.Migrations
 
             modelBuilder.Entity("ProdeMundial.Domain.Entities.AppUser", b =>
                 {
-                    b.Navigation("Predictions");
-
                     b.Navigation("UserCompanies");
                 });
 
             modelBuilder.Entity("ProdeMundial.Domain.Entities.Company", b =>
                 {
+                    b.Navigation("Predictions");
+
                     b.Navigation("UserCompanies");
                 });
 #pragma warning restore 612, 618
