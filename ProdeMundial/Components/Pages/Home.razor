@@ -45,7 +45,7 @@
                         <div class="card-header bg-light border-0 pt-3 d-flex justify-content-between align-items-center">
                             <span class="badge bg-dark text-white shadow-sm">@match.Phase</span>
                             <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">
-                                <i class="bi bi-calendar-event me-1"></i>@match.Date.ToString("dd/MM HH:mm") hs
+                               @TimeZoneInfo.ConvertTimeFromUtc(match.Date, TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time")).ToString("dd/MM HH:mm") HS
                             </div>
                         </div>
 
