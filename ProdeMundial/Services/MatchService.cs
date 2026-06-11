@@ -469,6 +469,14 @@ namespace ProdeMundial.Web.Services
             return await context.SaveChangesAsync();
         }
 
+        public async Task<AppUser?> GetUserByIdAsync(int userId)
+        {
+            using var context = factory.CreateDbContext();
+            // Buscamos el usuario en la base de datos por su ID único
+            return await context.AppUsers
+                .FirstOrDefaultAsync(u => u.Id == userId);
+        }
+
 
     }
 }

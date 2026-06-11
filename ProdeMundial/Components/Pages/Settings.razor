@@ -221,7 +221,7 @@
     private async Task ActivarTodosLosPendientes()
     {
         try
-        {
+        {     
             // Llamamos al servicio pasando el ID de la compañía actual de la sesión
             int totalActivados = await MatchService.ActivateAllPendingUsersAsync(Session.CurrentCompanyId);
         

@@ -1,0 +1,652 @@
+[
+  {
+    "HomeTeam": "México",
+    "HomeTeamCode": "mx",
+    "AwayTeam": "Sudáfrica",
+    "AwayTeamCode": "za",
+    "Group": "A",
+    "Phase": "Jornada 1 - Estadio Ciudad de México",
+    "DateUtc": "2026-06-11T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Corea del Sur",
+    "HomeTeamCode": "kr",
+    "AwayTeam": "República Checa",
+    "AwayTeamCode": "cz",
+    "Group": "A",
+    "Phase": "Jornada 1 - Estadio Guadalajara",
+    "DateUtc": "2026-06-12T02:00:00Z"
+  },
+  {
+    "HomeTeam": "Canadá",
+    "HomeTeamCode": "ca",
+    "AwayTeam": "Bosnia y Herzegovina",
+    "AwayTeamCode": "ba",
+    "Group": "B",
+    "Phase": "Jornada 1 - Estadio Toronto",
+    "DateUtc": "2026-06-12T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Estados Unidos",
+    "HomeTeamCode": "us",
+    "AwayTeam": "Paraguay",
+    "AwayTeamCode": "py",
+    "Group": "D",
+    "Phase": "Jornada 1 - Estadio Los Ángeles",
+    "DateUtc": "2026-06-13T01:00:00Z"
+  },
+  {
+    "HomeTeam": "Qatar",
+    "HomeTeamCode": "qa",
+    "AwayTeam": "Suiza",
+    "AwayTeamCode": "ch",
+    "Group": "B",
+    "Phase": "Jornada 1 - Estadio San Francisco",
+    "DateUtc": "2026-06-13T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Brasil",
+    "HomeTeamCode": "br",
+    "AwayTeam": "Marruecos",
+    "AwayTeamCode": "ma",
+    "Group": "C",
+    "Phase": "Jornada 1 - Estadio Nueva York Nueva Jersey",
+    "DateUtc": "2026-06-13T22:00:00Z"
+  },
+  {
+    "HomeTeam": "Haití",
+    "HomeTeamCode": "ht",
+    "AwayTeam": "Escocia",
+    "AwayTeamCode": "gb-sct",
+    "Group": "C",
+    "Phase": "Jornada 1 - Estadio Boston",
+    "DateUtc": "2026-06-14T01:00:00Z"
+  },
+  {
+    "HomeTeam": "Australia",
+    "HomeTeamCode": "au",
+    "AwayTeam": "Turquía",
+    "AwayTeamCode": "tr",
+    "Group": "D",
+    "Phase": "Jornada 1 - Estadio Vancouver",
+    "DateUtc": "2026-06-14T04:00:00Z"
+  },
+  {
+    "HomeTeam": "Alemania",
+    "HomeTeamCode": "de",
+    "AwayTeam": "Curazao",
+    "AwayTeamCode": "cw",
+    "Group": "E",
+    "Phase": "Jornada 1 - Estadio Houston",
+    "DateUtc": "2026-06-14T17:00:00Z"
+  },
+  {
+    "HomeTeam": "Países Bajos",
+    "HomeTeamCode": "nl",
+    "AwayTeam": "Japón",
+    "AwayTeamCode": "jp",
+    "Group": "F",
+    "Phase": "Jornada 1 - Estadio Dallas",
+    "DateUtc": "2026-06-14T20:00:00Z"
+  },
+  {
+    "HomeTeam": "Costa de Marfil",
+    "HomeTeamCode": "ci",
+    "AwayTeam": "Ecuador",
+    "AwayTeamCode": "ec",
+    "Group": "E",
+    "Phase": "Jornada 1 - Estadio Filadelfia",
+    "DateUtc": "2026-06-14T23:00:00Z"
+  },
+  {
+    "HomeTeam": "Suecia",
+    "HomeTeamCode": "se",
+    "AwayTeam": "Túnez",
+    "AwayTeamCode": "tn",
+    "Group": "F",
+    "Phase": "Jornada 1 - Estadio Monterrey",
+    "DateUtc": "2026-06-15T02:00:00Z"
+  },
+  {
+    "HomeTeam": "España",
+    "HomeTeamCode": "es",
+    "AwayTeam": "Cabo Verde",
+    "AwayTeamCode": "cv",
+    "Group": "H",
+    "Phase": "Jornada 1 - Estadio Atlanta",
+    "DateUtc": "2026-06-15T16:00:00Z"
+  },
+  {
+    "HomeTeam": "Bélgica",
+    "HomeTeamCode": "be",
+    "AwayTeam": "Egipto",
+    "AwayTeamCode": "eg",
+    "Group": "G",
+    "Phase": "Jornada 1 - Estadio Seattle",
+    "DateUtc": "2026-06-15T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Arabia Saudí",
+    "HomeTeamCode": "sa",
+    "AwayTeam": "Uruguay",
+    "AwayTeamCode": "uy",
+    "Group": "H",
+    "Phase": "Jornada 1 - Estadio Miami",
+    "DateUtc": "2026-06-15T22:00:00Z"
+  },
+  {
+    "HomeTeam": "Irán",
+    "HomeTeamCode": "ir",
+    "AwayTeam": "Nueva Zelanda",
+    "AwayTeamCode": "nz",
+    "Group": "G",
+    "Phase": "Jornada 1 - Estadio Los Ángeles",
+    "DateUtc": "2026-06-16T01:00:00Z"
+  },
+  {
+    "HomeTeam": "Francia",
+    "HomeTeamCode": "fr",
+    "AwayTeam": "Senegal",
+    "AwayTeamCode": "sn",
+    "Group": "I",
+    "Phase": "Jornada 1 - Estadio Nueva York Nueva Jersey",
+    "DateUtc": "2026-06-16T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Irak",
+    "HomeTeamCode": "iq",
+    "AwayTeam": "Noruega",
+    "AwayTeamCode": "no",
+    "Group": "I",
+    "Phase": "Jornada 1 - Estadio Boston",
+    "DateUtc": "2026-06-16T22:00:00Z"
+  },
+  {
+    "HomeTeam": "Argentina",
+    "HomeTeamCode": "ar",
+    "AwayTeam": "Argelia",
+    "AwayTeamCode": "dz",
+    "Group": "J",
+    "Phase": "Jornada 1 - Estadio Kansas City",
+    "DateUtc": "2026-06-17T01:00:00Z"
+  },
+  {
+    "HomeTeam": "Austria",
+    "HomeTeamCode": "at",
+    "AwayTeam": "Jordania",
+    "AwayTeamCode": "jo",
+    "Group": "J",
+    "Phase": "Jornada 1 - Estadio San Francisco",
+    "DateUtc": "2026-06-17T04:00:00Z"
+  },
+  {
+    "HomeTeam": "Portugal",
+    "HomeTeamCode": "pt",
+    "AwayTeam": "RD Congo",
+    "AwayTeamCode": "cd",
+    "Group": "K",
+    "Phase": "Jornada 1 - Estadio Houston",
+    "DateUtc": "2026-06-17T17:00:00Z"
+  },
+  {
+    "HomeTeam": "Inglaterra",
+    "HomeTeamCode": "gb-eng",
+    "AwayTeam": "Croacia",
+    "AwayTeamCode": "hr",
+    "Group": "L",
+    "Phase": "Jornada 1 - Estadio Boston",
+    "DateUtc": "2026-06-17T20:00:00Z"
+  },
+  {
+    "HomeTeam": "Ghana",
+    "HomeTeamCode": "gh",
+    "AwayTeam": "Panamá",
+    "AwayTeamCode": "pa",
+    "Group": "L",
+    "Phase": "Jornada 1 - Estadio Nueva York Nueva Jersey",
+    "DateUtc": "2026-06-17T23:00:00Z"
+  },
+  {
+    "HomeTeam": "Uzbekistán",
+    "HomeTeamCode": "uz",
+    "AwayTeam": "Colombia",
+    "AwayTeamCode": "co",
+    "Group": "K",
+    "Phase": "Jornada 1 - Estadio Dallas",
+    "DateUtc": "2026-06-18T02:00:00Z"
+  },
+
+  {
+    "HomeTeam": "República Checa",
+    "HomeTeamCode": "cz",
+    "AwayTeam": "Sudáfrica",
+    "AwayTeamCode": "za",
+    "Group": "A",
+    "Phase": "Jornada 2 - Estadio Atlanta",
+    "DateUtc": "2026-06-18T16:00:00Z"
+  },
+  {
+    "HomeTeam": "Suiza",
+    "HomeTeamCode": "ch",
+    "AwayTeam": "Bosnia y Herzegovina",
+    "AwayTeamCode": "ba",
+    "Group": "B",
+    "Phase": "Jornada 2 - Estadio Los Ángeles",
+    "DateUtc": "2026-06-18T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Canadá",
+    "HomeTeamCode": "ca",
+    "AwayTeam": "Qatar",
+    "AwayTeamCode": "qa",
+    "Group": "B",
+    "Phase": "Jornada 2 - Estadio Vancouver",
+    "DateUtc": "2026-06-18T22:00:00Z"
+  },
+  {
+    "HomeTeam": "México",
+    "HomeTeamCode": "mx",
+    "AwayTeam": "Corea del Sur",
+    "AwayTeamCode": "kr",
+    "Group": "A",
+    "Phase": "Jornada 2 - Estadio Guadalajara",
+    "DateUtc": "2026-06-19T02:00:00Z"
+  },
+  {
+    "HomeTeam": "Escocia",
+    "HomeTeamCode": "gb-sct",
+    "AwayTeam": "Marruecos",
+    "AwayTeamCode": "ma",
+    "Group": "C",
+    "Phase": "Jornada 2 - Estadio Miami",
+    "DateUtc": "2026-06-19T16:00:00Z"
+  },
+  {
+    "HomeTeam": "Brasil",
+    "HomeTeamCode": "br",
+    "AwayTeam": "Haití",
+    "AwayTeamCode": "ht",
+    "Group": "C",
+    "Phase": "Jornada 2 - Estadio Houston",
+    "DateUtc": "2026-06-19T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Turquía",
+    "HomeTeamCode": "tr",
+    "AwayTeam": "Paraguay",
+    "AwayTeamCode": "py",
+    "Group": "D",
+    "Phase": "Jornada 2 - Estadio San Francisco",
+    "DateUtc": "2026-06-19T22:00:00Z"
+  },
+  {
+    "HomeTeam": "Estados Unidos",
+    "HomeTeamCode": "us",
+    "AwayTeam": "Australia",
+    "AwayTeamCode": "au",
+    "Group": "D",
+    "Phase": "Jornada 2 - Estadio Seattle",
+    "DateUtc": "2026-06-20T02:00:00Z"
+  },
+  {
+    "HomeTeam": "Países Bajos",
+    "HomeTeamCode": "nl",
+    "AwayTeam": "Suecia",
+    "AwayTeamCode": "se",
+    "Group": "F",
+    "Phase": "Jornada 2 - Estadio Atlanta",
+    "DateUtc": "2026-06-20T17:00:00Z"
+  },
+  {
+    "HomeTeam": "Alemania",
+    "HomeTeamCode": "de",
+    "AwayTeam": "Costa de Marfil",
+    "AwayTeamCode": "ci",
+    "Group": "E",
+    "Phase": "Jornada 2 - Estadio Arlington",
+    "DateUtc": "2026-06-20T20:00:00Z"
+  },
+  {
+    "HomeTeam": "Ecuador",
+    "HomeTeamCode": "ec",
+    "AwayTeam": "Curazao",
+    "AwayTeamCode": "cw",
+    "Group": "E",
+    "Phase": "Jornada 2 - Estadio Filadelfia",
+    "DateUtc": "2026-06-20T23:00:00Z"
+  },
+  {
+    "HomeTeam": "Japón",
+    "HomeTeamCode": "jp",
+    "AwayTeam": "Túnez",
+    "AwayTeamCode": "tn",
+    "Group": "F",
+    "Phase": "Jornada 2 - Estadio Monterrey",
+    "DateUtc": "2026-06-21T02:00:00Z"
+  },
+  {
+    "HomeTeam": "España",
+    "HomeTeamCode": "es",
+    "AwayTeam": "Arabia Saudí",
+    "AwayTeamCode": "sa",
+    "Group": "H",
+    "Phase": "Jornada 2 - Estadio Atlanta",
+    "DateUtc": "2026-06-21T16:00:00Z"
+  },
+  {
+    "HomeTeam": "Bélgica",
+    "HomeTeamCode": "be",
+    "AwayTeam": "Irán",
+    "AwayTeamCode": "ir",
+    "Group": "G",
+    "Phase": "Jornada 2 - Estadio Los Ángeles",
+    "DateUtc": "2026-06-21T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Uruguay",
+    "HomeTeamCode": "uy",
+    "AwayTeam": "Cabo Verde",
+    "AwayTeamCode": "cv",
+    "Group": "H",
+    "Phase": "Jornada 2 - Estadio Miami",
+    "DateUtc": "2026-06-21T22:00:00Z"
+  },
+  {
+    "HomeTeam": "Nueva Zelanda",
+    "HomeTeamCode": "nz",
+    "AwayTeam": "Egipto",
+    "AwayTeamCode": "eg",
+    "Group": "G",
+    "Phase": "Jornada 2 - Estadio Vancouver",
+    "DateUtc": "2026-06-22T01:00:00Z"
+  },
+  {
+    "HomeTeam": "Francia",
+    "HomeTeamCode": "fr",
+    "AwayTeam": "Irak",
+    "AwayTeamCode": "iq",
+    "Group": "I",
+    "Phase": "Jornada 2 - Estadio Boston",
+    "DateUtc": "2026-06-22T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Senegal",
+    "HomeTeamCode": "sn",
+    "AwayTeam": "Noruega",
+    "AwayTeamCode": "no",
+    "Group": "I",
+    "Phase": "Jornada 2 - Estadio Nueva York Nueva Jersey",
+    "DateUtc": "2026-06-22T22:00:00Z"
+  },
+  {
+    "HomeTeam": "Argentina",
+    "HomeTeamCode": "ar",
+    "AwayTeam": "Austria",
+    "AwayTeamCode": "at",
+    "Group": "J",
+    "Phase": "Jornada 2 - Estadio Kansas City",
+    "DateUtc": "2026-06-23T01:00:00Z"
+  },
+  {
+    "HomeTeam": "Argelia",
+    "HomeTeamCode": "dz",
+    "AwayTeam": "Jordania",
+    "AwayTeamCode": "jo",
+    "Group": "J",
+    "Phase": "Jornada 2 - Estadio San Francisco",
+    "DateUtc": "2026-06-23T04:00:00Z"
+  },
+  {
+    "HomeTeam": "Portugal",
+    "HomeTeamCode": "pt",
+    "AwayTeam": "Uzbekistán",
+    "HomeTeamCode": "uz",
+    "Group": "K",
+    "Phase": "Jornada 2 - Estadio Houston",
+    "DateUtc": "2026-06-23T17:00:00Z"
+  },
+  {
+    "HomeTeam": "Inglaterra",
+    "HomeTeamCode": "gb-eng",
+    "AwayTeam": "Ghana",
+    "AwayTeamCode": "gh",
+    "Group": "L",
+    "Phase": "Jornada 2 - Estadio Boston",
+    "DateUtc": "2026-06-23T20:00:00Z"
+  },
+  {
+    "HomeTeam": "Panamá",
+    "HomeTeamCode": "pa",
+    "AwayTeam": "Croacia",
+    "AwayTeamCode": "hr",
+    "Group": "L",
+    "Phase": "Jornada 2 - Estadio Toronto",
+    "DateUtc": "2026-06-23T23:00:00Z"
+  },
+  {
+    "HomeTeam": "Colombia",
+    "HomeTeamCode": "co",
+    "AwayTeam": "RD Congo",
+    "AwayTeamCode": "cd",
+    "Group": "K",
+    "Phase": "Jornada 2 - Estadio Guadalajara",
+    "DateUtc": "2026-06-24T02:00:00Z"
+  },
+
+  {
+    "HomeTeam": "Sudáfrica",
+    "HomeTeamCode": "za",
+    "AwayTeam": "Corea del Sur",
+    "AwayTeamCode": "kr",
+    "Group": "A",
+    "Phase": "Jornada 3 - Estadio Monterrey",
+    "DateUtc": "2026-06-24T19:00:00Z"
+  },
+  {
+    "HomeTeam": "República Checa",
+    "HomeTeamCode": "cz",
+    "AwayTeam": "México",
+    "AwayTeamCode": "mx",
+    "Group": "A",
+    "Phase": "Jornada 3 - Estadio Ciudad de México",
+    "DateUtc": "2026-06-24T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Suiza",
+    "HomeTeamCode": "ch",
+    "AwayTeam": "Canadá",
+    "AwayTeamCode": "ca",
+    "Group": "B",
+    "Phase": "Jornada 3 - Estadio Vancouver",
+    "DateUtc": "2026-06-24T23:00:00Z"
+  },
+  {
+    "HomeTeam": "Bosnia y Herzegovina",
+    "HomeTeamCode": "ba",
+    "AwayTeam": "Qatar",
+    "AwayTeamCode": "qa",
+    "Group": "B",
+    "Phase": "Jornada 3 - Estadio Seattle",
+    "DateUtc": "2026-06-24T23:00:00Z"
+  },
+  {
+    "HomeTeam": "Ecuador",
+    "HomeTeamCode": "ec",
+    "AwayTeam": "Alemania",
+    "AwayTeamCode": "de",
+    "Group": "E",
+    "Phase": "Jornada 3 - Estadio Nueva York Nueva Jersey",
+    "DateUtc": "2026-06-25T14:00:00Z"
+  },
+  {
+    "HomeTeam": "Curazao",
+    "HomeTeamCode": "cw",
+    "AwayTeam": "Costa de Marfil",
+    "AwayTeamCode": "ci",
+    "Group": "E",
+    "Phase": "Jornada 3 - Estadio Filadelfia",
+    "DateUtc": "2026-06-25T14:00:00Z"
+  },
+  {
+    "HomeTeam": "Japón",
+    "HomeTeamCode": "jp",
+    "AwayTeam": "Suecia",
+    "AwayTeamCode": "se",
+    "Group": "F",
+    "Phase": "Jornada 3 - Estadio Boston",
+    "DateUtc": "2026-06-25T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Túnez",
+    "HomeTeamCode": "tn",
+    "AwayTeam": "Países Bajos",
+    "AwayTeamCode": "nl",
+    "Group": "F",
+    "Phase": "Jornada 3 - Estadio Atlanta",
+    "DateUtc": "2026-06-25T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Marruecos",
+    "HomeTeamCode": "ma",
+    "AwayTeam": "Haití",
+    "AwayTeamCode": "ht",
+    "Group": "C",
+    "Phase": "Jornada 3 - Estadio Orlando",
+    "DateUtc": "2026-06-26T14:00:00Z"
+  },
+  {
+    "HomeTeam": "Escocia",
+    "HomeTeamCode": "gb-sct",
+    "AwayTeam": "Brasil",
+    "AwayTeamCode": "br",
+    "Group": "C",
+    "Phase": "Jornada 3 - Estadio Miami",
+    "DateUtc": "2026-06-26T14:00:00Z"
+  },
+  {
+    "HomeTeam": "Irán",
+    "HomeTeamCode": "ir",
+    "AwayTeam": "Egipto",
+    "AwayTeamCode": "eg",
+    "Group": "G",
+    "Phase": "Jornada 3 - Estadio Dallas",
+    "DateUtc": "2026-06-26T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Nueva Zelanda",
+    "HomeTeamCode": "nz",
+    "AwayTeam": "Bélgica",
+    "AwayTeamCode": "be",
+    "Group": "G",
+    "Phase": "Jornada 3 - Estadio Seattle",
+    "DateUtc": "2026-06-26T19:00:00Z"
+  },
+  {
+    "HomeTeam": "Turquía",
+    "HomeTeamCode": "tr",
+    "AwayTeam": "Estados Unidos",
+    "AwayTeamCode": "us",
+    "Group": "D",
+    "Phase": "Jornada 3 - Estadio Los Ángeles",
+    "DateUtc": "2026-06-27T00:00:00Z"
+  },
+  {
+    "HomeTeam": "Paraguay",
+    "HomeTeamCode": "py",
+    "AwayTeam": "Australia",
+    "AwayTeamCode": "au",
+    "Group": "D",
+    "Phase": "Jornada 3 - Estadio San Francisco",
+    "DateUtc": "2026-06-27T00:00:00Z"
+  },
+  {
+    "HomeTeam": "Senegal",
+    "HomeTeamCode": "sn",
+    "AwayTeam": "Irak",
+    "AwayTeamCode": "iq",
+    "Group": "I",
+    "Phase": "Jornada 3 - Estadio Atlanta",
+    "DateUtc": "2026-06-27T14:00:00Z"
+  },
+  {
+    "HomeTeam": "Noruega",
+    "HomeTeamCode": "no",
+    "AwayTeam": "Francia",
+    "AwayTeamCode": "fr",
+    "Group": "I",
+    "Phase": "Jornada 3 - Estadio Boston",
+    "DateUtc": "2026-06-27T14:00:00Z"
+  },
+  {
+    "HomeTeam": "Argentina",
+    "HomeTeamCode": "ar",
+    "AwayTeam": "Jordania",
+    "AwayTeamCode": "jo",
+    "Group": "J",
+    "Phase": "Jornada 3 - Estadio Dallas",
+    "DateUtc": "2026-06-27T20:00:00Z"
+  },
+  {
+    "HomeTeam": "Argelia",
+    "HomeTeamCode": "dz",
+    "AwayTeam": "Austria",
+    "AwayTeamCode": "at",
+    "Group": "J",
+    "Phase": "Jornada 3 - Estadio Kansas City",
+    "DateUtc": "2026-06-27T20:00:00Z"
+  },
+  {
+    "HomeTeam": "Portugal",
+    "HomeTeamCode": "pt",
+    "AwayTeam": "Colombia",
+    "AwayTeamCode": "co",
+    "Group": "K",
+    "Phase": "Jornada 3 - Estadio Miami",
+    "DateUtc": "2026-06-27T23:30:00Z"
+  },
+  {
+    "HomeTeam": "RD Congo",
+    "HomeTeamCode": "cd",
+    "AwayTeam": "Uzbekistán",
+    "AwayTeamCode": "uz",
+    "Group": "K",
+    "Phase": "Jornada 3 - Estadio Atlanta",
+    "DateUtc": "2026-06-27T23:30:00Z"
+  },
+  {
+    "HomeTeam": "Croacia",
+    "HomeTeamCode": "hr",
+    "AwayTeam": "Ghana",
+    "AwayTeamCode": "gh",
+    "Group": "L",
+    "Phase": "Jornada 3 - Estadio Toronto",
+    "DateUtc": "2026-06-28T03:00:00Z"
+  },
+  {
+    "HomeTeam": "Panamá",
+    "HomeTeamCode": "pa",
+    "AwayTeam": "Inglaterra",
+    "AwayTeamCode": "gb-eng",
+    "Group": "L",
+    "Phase": "Jornada 3 - Estadio Boston",
+    "DateUtc": "2026-06-28T03:00:00Z"
+  },
+  {
+    "HomeTeam": "Uruguay",
+    "HomeTeamCode": "uy",
+    "AwayTeam": "España",
+    "AwayTeamCode": "es",
+    "Group": "H",
+    "Phase": "Jornada 3 - Estadio Guadalajara",
+    "DateUtc": "2026-06-28T18:00:00Z"
+  },
+  {
+    "HomeTeam": "Cabo Verde",
+    "HomeTeamCode": "cv",
+    "AwayTeam": "Arabia Saudí",
+    "AwayTeamCode": "sa",
+    "Group": "H",
+    "Phase": "Jornada 3 - Estadio Houston",
+    "DateUtc": "2026-06-28T18:00:00Z"
+  }
+]

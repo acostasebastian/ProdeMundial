@@ -50,5 +50,7 @@ namespace ProdeMundial.Web.Services
 
         Task<int> ActivateAllPendingUsersAsync(int companyId);
 
+        Task<AppUser?> GetUserByIdAsync(int userId);
+
     }
 }

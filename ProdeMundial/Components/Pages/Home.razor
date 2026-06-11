@@ -9,13 +9,17 @@
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 
-
 <PageTitle>Mundial 2026 - Mis Predicciones</PageTitle>
 
 @if (Session.CurrentUser != null && !Session.CurrentUser.IsActive)
 {
-    <div class="alert alert-warning text-center shadow-sm fw-bold mb-4 animate__animated animate__flash">
-        ⚠️ Tu usuario está en estado PENDIENTE. Hasta que el encargado del bar no confirme tu pago en el sistema, no podrás guardar tus pronósticos.
+    <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2 shadow-sm mb-4">
+        <span class="fw-bold">
+            ⚠️ Tu usuario está en estado PENDIENTE. Hasta que el encargado del bar no confirme tu pago en el sistema, no podrás guardar tus pronósticos.
+        </span>
+        <button class="btn btn-dark btn-sm fw-bold rounded-pill px-3 ms-auto" @onclick="VerificarMiEstadoAsync" type="button">
+            <i class="bi bi-arrow-clockwise me-1"></i> Ya pagué, verificar
+        </button>
     </div>
 }
 
@@ -34,119 +38,152 @@
     }
     else
     {
+        @* 1. SOLAPAS PRINCIPALES: JORNADAS *@
+        <ul class="nav nav-pills nav-fill mb-3 p-1 bg-light rounded-pill shadow-sm" role="tablist">
+            @foreach (var jornada in listaJornadas)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill fw-bold @(jornadaActiva == jornada ? "active bg-primary text-white" : "text-secondary")"
+                            @onclick='() => CambiarJornada(jornada)' type="button">
+                        ⚽ @jornada
+                    </button>
+                </li>
+            }
+        </ul>
+
+        @* 2. SUBSOLAPAS SECUNDARIAS: BOTONES DE GRUPO (A-L) *@
+  
+        <div class="d-flex flex-wrap gap-1 mb-4 bg-light p-2 rounded-3 shadow-sm justify-content-center">
+            @foreach (var grupo in listaGrupos)
+            {
+                <button class="btn btn-sm fw-bold @(grupoActivo == grupo ? "btn-primary text-white" : "btn-outline-secondary")"
+                        @onclick="() => CambiarGrupo(grupo)" style="min-width: 42px;" type="button">
+                    <span class="d-none d-md-inline">Grupo </span>@grupo
+                </button>
+            }
+        </div>
 
         <div class="row">
-            @foreach (var match in matches)
+            @* 🔥 CORREGIDO: Ahora buscamos el Grupo a través de HomeTeam *@
+            @{
+                var partidosFiltrados = matches
+                    .Where(m => m.Phase != null && m.Phase.Contains(jornadaActiva) && m.HomeTeam?.Group == grupoActivo)
+                    .ToList();
+            }
+
+            @if (partidosFiltrados.Any())
             {
-                <div class="col-12 col-md-6 col-lg-4 mb-4">
-                    @* Card con borde lateral si ya tiene predicción *@
-                    <div class="card shadow-sm border-0 h-100 @(HasPrediction(match.Id) ? "border-start border-success border-5" : "")">
-                        
-                        <div class="card-header bg-light border-0 pt-3 d-flex justify-content-between align-items-center">
-                            <span class="badge bg-dark text-white shadow-sm">@match.Phase</span>
-                            <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">
-                               @TimeZoneInfo.ConvertTimeFromUtc(match.Date, TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time")).ToString("dd/MM HH:mm") HS
-                            </div>
-                        </div>
-
-                        <div class="card-body py-3">
-
-                            @if (match.IsFinished && match.HomeScore.HasValue && match.AwayScore.HasValue)
-                            {
-                                var result = GetPredictionResult(match);
-                                if (!string.IsNullOrEmpty(result.text))
-                                {
-                                    <div class="alert @result.css p-2 mb-3 text-center small fw-bold shadow-sm">
-                                        @result.text (Real: @match.HomeScore - @match.AwayScore)
-                                    </div>
-                                }
-                            }
-
-                           
-                            @* CONTENEDOR CENTRAL DE INPUTS *@
-
-                            @* Estructura ultra-estable para banderas e inputs - MANTENIDA AL 100% *@
-                            <div class="d-flex align-items-center justify-content-center">
-        
-                                @* LOCAL *@
-                                <div class="text-center" style="width: 80px;">
-                                    <img src="@match.HomeTeam.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
-                                    <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
-                                        @match.HomeTeam.Name
-                                    </div>
+                @foreach (var match in partidosFiltrados)
+                {
+                    <div class="col-12 col-md-6 col-lg-4 mb-4">
+                        @* Card con borde lateral si ya tiene predicción *@
+                        <div class="card shadow-sm border-0 h-100 @(HasPrediction(match.Id) ? "border-start border-success border-5" : "")">
+                            
+                            <div class="card-header bg-light border-0 pt-3 d-flex justify-content-between align-items-center">
+                                <span class="badge bg-dark text-white shadow-sm">@match.Phase</span>
+                                <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">
+                                    @TimeZoneInfo.ConvertTimeFromUtc(match.Date, TimeZoneInfo.FindSystemTimeZoneById("Romance Standard Time")).ToString("dd/MM HH:mm") HS
                                 </div>
+                            </div>
+
+                            <div class="card-body py-3">
+
+                                @if (match.IsFinished && match.HomeScore.HasValue && match.AwayScore.HasValue)
+                                {
+                                    var result = GetPredictionResult(match);
+                                    if (!string.IsNullOrEmpty(result.text))
+                                    {
+                                        <div class="alert @result.css p-2 mb-3 text-center small fw-bold shadow-sm">
+                                            @result.text (Real: @match.HomeScore - @match.AwayScore)
+                                        </div>
+                                    }
+                                }
 
                                 @* CONTENEDOR CENTRAL DE INPUTS *@
-                                <div class="mx-2 d-flex align-items-center bg-light p-2 rounded-3 border shadow-sm">
-                                    @* Agregado placeholder="-" para manejar los nulos *@
-                                    <input type="number" min="0" max="20" @bind="homeScores[match.Id]" disabled="@match.IsFinished"
-                                           placeholder="-"
-                                           class="form-control text-center fw-bold p-0"
-                                           style="width: 45px; height: 45px; font-size: 1.4rem; border: 1px solid #ccc; background: white;" />
-            
-                                    <span class="px-2 fw-bold text-muted">-</span>
-            
-                                    @* Agregado placeholder="-" para manejar los nulos *@
-                                    <input type="number" min="0" max="20" @bind="awayScores[match.Id]" disabled="@match.IsFinished"
-                                           placeholder="-"
-                                           class="form-control text-center fw-bold p-0"
-                                           style="width: 45px; height: 45px; font-size: 1.4rem; border: 1px solid #ccc; background: white;" />
-                                </div>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    
+                                    @* LOCAL *@
+                                    <div class="text-center" style="width: 80px;">
+                                        <img src="@match.HomeTeam?.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
+                                        <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
+                                            @match.HomeTeam?.Name
+                                        </div>
+                                    </div>
 
-                                @* VISITANTE *@
-                                <div class="text-center" style="width: 80px;">
-                                    <img src="@match.AwayTeam.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
-                                    <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
-                                        @match.AwayTeam.Name
+                                    @* CONTENEDOR CENTRAL DE INPUTS *@
+                                    <div class="mx-2 d-flex align-items-center bg-light p-2 rounded-3 border shadow-sm">
+                                        <input type="number" min="0" max="20" @bind="homeScores[match.Id]" disabled="@match.IsFinished"
+                                               placeholder="-"
+                                               class="form-control text-center fw-bold p-0"
+                                               style="width: 45px; height: 45px; font-size: 1.4rem; border: 1px solid #ccc; background: white;" />
+                                        
+                                        <span class="px-2 fw-bold text-muted">-</span>
+                                        
+                                        <input type="number" min="0" max="20" @bind="awayScores[match.Id]" disabled="@match.IsFinished"
+                                               placeholder="-"
+                                               class="form-control text-center fw-bold p-0"
+                                               style="width: 45px; height: 45px; font-size: 1.4rem; border: 1px solid #ccc; background: white;" />
+                                    </div>
+
+                                    @* VISITANTE *@
+                                    <div class="text-center" style="width: 80px;">
+                                        <img src="@match.AwayTeam?.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
+                                        <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
+                                            @match.AwayTeam?.Name
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="card-footer bg-white border-0 pb-3 px-3">
-                            @if (!match.IsFinished)
-                            {
-                                @* Validamos que existan las llaves y que tengan valor real (no null) *@
-                                bool datosCompletos = homeScores.ContainsKey(match.Id) && homeScores[match.Id].HasValue &&
-                                                      awayScores.ContainsKey(match.Id) && awayScores[match.Id].HasValue;
+                            <div class="card-footer bg-white border-0 pb-3 px-3">
+                                @if (!match.IsFinished)
+                                {
+                                    bool datosCompletos = homeScores.ContainsKey(match.Id) && homeScores[match.Id].HasValue &&
+                                                          awayScores.ContainsKey(match.Id) && awayScores[match.Id].HasValue;
 
-                                <button class="btn @(HasPrediction(match.Id) ? "btn-outline-success" : "btn-dark") w-100 py-2 fw-bold shadow-sm"
-                                        @onclick="() => Save(match.Id)"
-                                        disabled="@(!Session.CurrentUser?.IsActive == true || !datosCompletos)">
-                                    @if (HasPrediction(match.Id))
-                                    {
-                                        <span><i class="bi bi-arrow-repeat me-1"></i> Actualizar</span>
-                                    }
-                                    else
-                                    {
-                                        <span><i class="bi bi-save me-1"></i> Guardar Pronóstico</span>
-                                    }
-                                </button>
-                            }
-                            else
-                            {
-                                <button class="btn btn-light w-100 py-2 disabled text-muted border">
-                                    Partido Finalizado
-                                </button>
-                            }
+                                    <button class="btn @(HasPrediction(match.Id) ? "btn-outline-success" : "btn-dark") w-100 py-2 fw-bold shadow-sm"
+                                            @onclick="() => Save(match.Id)"
+                                            disabled="@(!Session.CurrentUser?.IsActive == true || !datosCompletos)">
+                                        @if (HasPrediction(match.Id))
+                                        {
+                                            <span><i class="bi bi-arrow-repeat me-1"></i> Actualizar</span>
+                                        }
+                                        else
+                                        {
+                                            <span><i class="bi bi-save me-1"></i> Guardar Pronóstico</span>
+                                        }
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-light w-100 py-2 disabled text-muted border">
+                                        Partido Finalizado
+                                    </button>
+                                }
 
-                            <!-- Mensaje de Éxito -->
-                            @if (showSuccessId == match.Id)
-                            {
-                                <div class="text-success text-center small fw-bold mt-2 animate__animated animate__pulse">
-                                    ✅ ¡Guardado correctamente!
-                                </div>
-                            }
+                                @if (showSuccessId == match.Id)
+                                {
+                                    <div class="text-success text-center small fw-bold mt-2 animate__animated animate__pulse">
+                                        ✅ ¡Guardado correctamente!
+                                    </div>
+                                }
 
-                            <!--  Mensaje de ERROR de validación -->
-                            @if (errorMessages.ContainsKey(match.Id) && !string.IsNullOrEmpty(errorMessages[match.Id]))
-                            {
-                                <div class="text-danger small fw-bold mt-2 animate__animated animate__shakeX">
-                                    @errorMessages[match.Id]
-                                </div>
-                            }
+                                @if (errorMessages.ContainsKey(match.Id) && !string.IsNullOrEmpty(errorMessages[match.Id]))
+                                {
+                                    <div class="text-danger small fw-bold mt-2 animate__animated animate__shakeX">
+                                        @errorMessages[match.Id]
+                                    </div>
+                                }
+                            </div>
                         </div>
                     </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center text-muted my-5">
+                    <i class="bi bi-calendar-x fs-1"></i>
+                    <p class="mt-2 fw-bold">No hay partidos cargados para el Grupo @grupoActivo en esta jornada.</p>
                 </div>
             }
         </div>
@@ -162,18 +199,18 @@
     }
 
     @{
-        // Check rápido: ¿Hay al menos un partido con ambos goles llenos?
-        bool tieneAlgoParaGuardar = matches?.Any(m =>
-            homeScores.ContainsKey(m.Id) && homeScores[m.Id].HasValue &&
-            awayScores.ContainsKey(m.Id) && awayScores[m.Id].HasValue) ?? false;
+        @* 🔥 CORREGIDO: Aquí también buscamos el Grupo a través de HomeTeam *@
+        bool tieneAlgoParaGuardar = matches?
+            .Where(m => m.Phase != null && m.Phase.Contains(jornadaActiva) && m.HomeTeam?.Group == grupoActivo)
+            .Any(m => homeScores.ContainsKey(m.Id) && homeScores[m.Id].HasValue &&
+                      awayScores.ContainsKey(m.Id) && awayScores[m.Id].HasValue) ?? false;
     }
 
-    <!--  Botón pequeño y compacto (estilo original) -->
     <button class="btn btn-success btn-floating"
             @onclick="SaveAll"
-            disabled="@(!Session.CurrentUser?.IsActive == true || !tieneAlgoParaGuardar || isSavingAll)" accesskey=""
-            title="Guardar todo">
-    
+            disabled="@(!Session.CurrentUser?.IsActive == true || !tieneAlgoParaGuardar || isSavingAll)"
+            title="Guardar visibles">
+        
         @if (isSavingAll)
         {
             <span class="spinner-border spinner-border-sm"></span>
@@ -181,12 +218,10 @@
         else
         {
             <i class="bi bi-cloud-check-fill"></i>
-            <!-- El texto solo aparece en pantallas medianas, en móvil solo el icono -->
-            <span class="d-none d-md-inline ms-1">Guardar Todo</span>
+            <span class="d-none d-md-inline ms-1">Guardar Grupo</span>
         }
     </button>
 </div>
-
 
 
 @code {
@@ -199,14 +234,20 @@
 
     private HubConnection? hubConnection;
 
-    // Boton de SaveAll
+    // Estados de navegación e interfaz
+    private string jornadaActiva = "Jornada 1";
+    private string grupoActivo = "A";
+
+    private readonly List<string> listaJornadas = new() { "Jornada 1", "Jornada 2", "Jornada 3" };
+    private readonly List<string> listaGrupos = new() { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" };
+
+    // Botón de SaveAll
     private bool isSavingAll = false;
     private string globalMessage = "";
     private int showSuccessId = 0;
 
     protected override async Task OnInitializedAsync()
-    {     
-        // 1. SEGURIDAD: Si no está autenticado, lo mandamos al Login directo
+    {
         if (!Session.IsAuthenticated)
         {
             NavigationManager.NavigateTo("/login");
@@ -219,12 +260,10 @@
             return;
         }
 
-        // Suscripción a eventos locales
         Session.OnUserChanged += HandleUserChanged;
         MatchService.OnPredictionsCleared += HandleUserChanged;
         MatchService.OnResultUpdated += HandleUserChanged;
 
-        // 2. CARGA INMEDIATA: Traemos los partidos ya mismo para quitar el spinner
         await LoadData();
     }
 
@@ -236,7 +275,6 @@
             return;
         }
 
-        // 3. SIGNALR EN SEGUNDO PLANO: Evitamos congelar el OnInitialized
         if (firstRender && Session.IsAuthenticated)
         {
             try
@@ -330,12 +368,10 @@
     {
         errorMessages[matchId] = "";
         
-        // 1. Buscamos el partido en la lista local para validar la fecha
         var match = matches?.FirstOrDefault(m => m.Id == matchId);
         if (match == null || Session.CurrentUser == null) return;
-
-        // 🔥 CANDADO DE SEGURIDAD ABSOLUTO: Si el partido ya empezó o terminó, bloqueamos el guardado en el backend
-        if (match.IsFinished || DateTime.Now >= match.Date)
+     
+        if (match.IsFinished || DateTime.UtcNow >= match.Date)
         {
             errorMessages[matchId] = "⛔ El partido ya ha comenzado o finalizado. No se permiten más pronósticos.";
             return;
@@ -389,10 +425,11 @@
         globalMessage = "";
         bool hasAnyError = false;
 
-        // 🔥 FILTRO DE SEGURIDAD EN MASA: Solo iteramos partidos que no han empezado en la vida real
-        var partidosValidos = matches.Where(m => !m.IsFinished && DateTime.Now < m.Date);
-
-        foreach (var match in partidosValidos)
+        @* 🔥 CORREGIDO: Aquí también filtramos usando HomeTeam?.Group *@
+        var partidosVisiblesYValidos = matches
+            .Where(m => m.Phase != null && m.Phase.Contains(jornadaActiva) && m.HomeTeam?.Group == grupoActivo && !m.IsFinished && DateTime.UtcNow < m.Date);
+                
+        foreach (var match in partidosVisiblesYValidos)
         {
             var home = homeScores.ContainsKey(match.Id) ? homeScores[match.Id] : null;
             var away = awayScores.ContainsKey(match.Id) ? awayScores[match.Id] : null;
@@ -428,10 +465,10 @@
         }
 
         myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser.Id, Session.CurrentCompanyId);
-    
+        
         if (!hasAnyError)
         {
-            globalMessage = "✅ ¡Todo guardado!";
+            globalMessage = $"✅ ¡Grupo {grupoActivo} guardado!";
             StateHasChanged();
             await Task.Delay(3000);
             globalMessage = "";
@@ -443,7 +480,6 @@
 
     private (string text, string css) GetPredictionResult(Match match)
     {
-        // 🔥 CORRECCIÓN DEL FORMATO NULL: Si no ha terminado o faltan los datos reales, no mostramos nada
         if (!match.IsFinished || !match.HomeScore.HasValue || !match.AwayScore.HasValue || !HasPrediction(match.Id))
             return ("", "");
 
@@ -454,7 +490,6 @@
         int pHome = pred.PredictedHomeScore.Value;
         int pAway = pred.PredictedAwayScore.Value;
         
-        // Mapeo seguro directo de los valores reales confirmados de la base de datos
         int mHome = match.HomeScore.Value;
         int mAway = match.AwayScore.Value;
 
@@ -467,6 +502,18 @@
         if (winner) return ("✅ Acertaste Resultado (+1 pt)", "alert-info border-info text-info fw-bold");
 
         return ("❌ No acertaste (0 pts)", "alert-danger border-danger text-danger");
+    }
+
+    private void CambiarJornada(string nuevaJornada)
+    {
+        jornadaActiva = nuevaJornada;
+        StateHasChanged();
+    }
+
+    private void CambiarGrupo(string nuevoGrupo)
+    {
+        grupoActivo = nuevoGrupo;
+        StateHasChanged();
     }
 
     public void Dispose()
@@ -483,5 +530,25 @@
             await hubConnection.DisposeAsync();
         }
         Dispose();
+    }
+
+    private async Task VerificarMiEstadoAsync()
+    {
+        if (Session.CurrentUser == null) return;
+
+        try
+        {
+            var usuarioFresco = await MatchService.GetUserByIdAsync(Session.CurrentUser.Id);
+
+            if (usuarioFresco != null && usuarioFresco.IsActive)
+            {
+                Session.CurrentUser.IsActive = true;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al verificar estado: {ex.Message}");
+        }
     }
 }

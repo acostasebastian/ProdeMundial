@@ -18,4 +18,10 @@
     <ProjectReference Include="..\ProdeMundial.Domain\ProdeMundial.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Data\fixture-mundial.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
