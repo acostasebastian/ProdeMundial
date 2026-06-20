@@ -9,15 +9,12 @@
 @inject NavigationManager NavManager
 @inject IHubContext<TournamentHub> HubContext
 
-
-<div class="container mt-4">    
+<div class="container mt-4">
     <div class="container mt-5">
-        @* Ese mt-5 (margin top 5) bajará un poco el contenido para que no choque con el header *@
         <div class="text-center mb-4">
             <h2 class="display-4 fw-bold text-primary">Porra Mundial 2026</h2>
             <p class="lead">Ingresa los resultados de los partidos.</p>
         </div>
-        
     </div>
 
     @if (!isReady)
@@ -38,10 +35,12 @@
             <div class="list-group shadow-sm">
                 @foreach (var match in matches)
                 {
-                    <div class="list-group-item d-flex align-items-center p-2 p-md-3 mb-2 shadow-sm border rounded">
-            
-                        <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
-                
+                    bool esEliminatoria = match.Phase != null && !match.Phase.Contains("Jornada", StringComparison.OrdinalIgnoreCase);
+
+                    <div class="list-group-item p-3 mb-3 shadow-sm border rounded bg-white">
+
+                        <div class="d-flex align-items-center justify-content-between">
+
                             <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 0;">
                                 <span class="fw-bold me-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     @match.HomeTeam.Name
@@ -50,9 +49,9 @@
                             </div>
 
                             <div class="d-flex align-items-center justify-content-center px-2" style="width: 110px;">
-                                <input type="number" @bind="adminHomeScores[match.Id]" class="marcador-input" style="width: 40px; height: 40px; font-size: 1rem;" />
+                                <input type="number" @bind="adminHomeScores[match.Id]" class="marcador-input text-center fw-bold" style="width: 40px; height: 40px; font-size: 1rem;" />
                                 <span class="mx-1 fw-bold text-muted">-</span>
-                                <input type="number" @bind="adminAwayScores[match.Id]" class="marcador-input" style="width: 40px; height: 40px; font-size: 1rem;" />
+                                <input type="number" @bind="adminAwayScores[match.Id]" class="marcador-input text-center fw-bold" style="width: 40px; height: 40px; font-size: 1rem;" />
                             </div>
 
                             <div class="d-flex align-items-center justify-content-start" style="flex: 1; min-width: 0;">
@@ -62,44 +61,67 @@
                                 </span>
                                 @if (match.IsFinished)
                                 {
-                                    <i class="bi bi-check-circle-fill text-success ms-1 d-none d-sm-inline"></i>
+                                    <i class="bi bi-check-circle-fill text-success ms-2" title="Partido Finalizado"></i>
                                 }
+                            </div>
+
+                            <div class="ms-3 ps-3 border-start">
+                                <button class="btn @(match.IsFinished ? "btn-outline-secondary" : "btn-danger") fw-bold btn-sm"
+                                        style="width: 70px; font-size: 0.75rem;"
+                                        @onclick="() => SaveResult(match.Id)">
+                                    @(match.IsFinished ? "EDITAR" : "LISTO")
+                                </button>
                             </div>
                         </div>
 
-                        <div class="ms-2 ms-md-3 ps-2 ps-md-3 border-start">
-                            <button class="btn @(match.IsFinished ? "btn-outline-secondary" : "btn-danger") fw-bold btn-sm"
-                                    style="width: 70px; font-size: 0.75rem;"
-                                    @onclick="() => SaveResult(match.Id)">
-                                @(match.IsFinished ? "EDITAR" : "LISTO")
-                            </button>
-                        </div>
-            
+                        @if (errorMessages.ContainsKey(match.Id) && !string.IsNullOrEmpty(errorMessages[match.Id]))
+                        {
+                            <div class="alert alert-danger p-2 mt-2 mb-0 small text-center fw-bold">
+                                @errorMessages[match.Id]
+                            </div>
+                        }
+
+                        @if (esEliminatoria && adminHomeScores.ContainsKey(match.Id) && adminAwayScores.ContainsKey(match.Id) && adminHomeScores[match.Id] == adminAwayScores[match.Id])
+                        {
+                            var idGanadorSeleccionado = adminWinnerTeams.ContainsKey(match.Id) ? adminWinnerTeams[match.Id] : null;
+
+                            <div class="mt-3 p-2 rounded bg-light border text-center border-warning" style="max-width: 500px; margin: 0 auto;">
+                                <div class="fw-bold text-muted mb-2 small text-uppercase">🏆 Definición por Penales Real</div>
+                                <div class="btn-group btn-group-sm w-100 shadow-sm">
+                                    <button type="button"
+                                            class="btn @(idGanadorSeleccionado == match.HomeTeamId ? "btn-success text-white fw-bold" : "btn-outline-secondary")"
+                                            @onclick="() => adminWinnerTeams[match.Id] = match.HomeTeamId">
+                                        Clasificó @match.HomeTeam?.Name
+                                    </button>
+                                    <button type="button"
+                                            class="btn @(idGanadorSeleccionado == match.AwayTeamId ? "btn-success text-white fw-bold" : "btn-outline-secondary")"
+                                            @onclick="() => adminWinnerTeams[match.Id] = match.AwayTeamId">
+                                        Clasificó @match.AwayTeam?.Name
+                                    </button>
+                                </div>
+                            </div>
+                        }
+
                     </div>
                 }
             </div>
-
         }
     }
-
-  
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="text-danger mb-0"><i class="bi bi-gear-fill"></i> Panel de Control</h2>
-        
+
             <div class="btn-group shadow-sm">
                 <button class="btn btn-outline-primary" @onclick="SimulateResults">
                     <i class="bi bi-dice-5"></i> Simular Todo
-                </button>               
+                </button>
                 <button class="btn btn-outline-danger" @onclick="() => showResetModal = true">
                     <i class="bi bi-trash"></i> Resetear Torneo
                 </button>
             </div>
         </div>
-
     </div>
-
 </div>
 
 @if (showResetModal)
@@ -115,46 +137,40 @@
                     <p class="fs-5">¿Qué deseas resetear exactamente?</p>
                     <div class="form-check form-switch d-inline-block text-start mb-3">
                         <input class="form-check-input" type="checkbox" id="checkPred" @bind="deletePredictions">
-                            <label class="form-check-label fw-bold" for="checkPred">¿Borrar también las predicciones de usuarios?</label>
-                        </div>
-                        <p class="text-muted small">Esta acción no se puede deshacer.</p>
+                        <label class="form-check-label fw-bold" for="checkPred">¿Borrar también las predicciones de usuarios?</label>
                     </div>
-                    <div class="modal-footer justify-content-center border-0 pb-4">
-                        <button type="button" class="btn btn-secondary px-4" @onclick="() => showResetModal = false">Cancelar</button>
-                        <button type="button" class="btn btn-danger px-4" @onclick="ConfirmReset">Ejecutar Reset</button>
-                    </div>
+                    <p class="text-muted small">Esta action no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn btn-secondary px-4" @onclick="() => showResetModal = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger px-4" @onclick="ConfirmReset">Ejecutar Reset</button>
                 </div>
             </div>
         </div>
+    </div>
 }
 
 @code {
     private List<Match>? matches;
-    // Usamos dos diccionarios simples para evitar el error de la tupla
     private Dictionary<int, int> adminHomeScores = new();
     private Dictionary<int, int> adminAwayScores = new();
 
+    // 1. Diccionario global para guardar el ID del equipo clasificado real
+    private Dictionary<int, int?> adminWinnerTeams = new();
+
+    // Diccionario para capturar alertas de error por partido
+    private Dictionary<int, string> errorMessages = new();
+
     private bool showResetModal = false;
     private bool deletePredictions = false;
-
-    // 🔥 NUEVA BANDERA: Evita que el HTML intente dibujar o evaluar antes de tiempo
     private bool isReady = false;
 
-   
-    protected override async Task OnInitializedAsync()
-    {
-        
-    }
-
-    // 2. Usamos este método que corre SÓLO cuando el navegador ya está conectado de verdad
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Rehidratamos la sesión desde el almacenamiento seguro del navegador
             await Session.EnsureUserLoadedAsync();
 
-            // Candado estricto de SuperAdmin: Ahora sí es seguro evaluar
             if (!Session.IsSuperAdmin)
             {
                 Console.WriteLine("⛔ ACCESO DENEGADO: Redirigiendo al login...");
@@ -164,7 +180,6 @@
 
             try
             {
-                // Cargamos los partidos ahora que sabemos que eres tú
                 matches = await MatchService.GetUpcomingMatchesAsync();
                 if (matches != null)
                 {
@@ -172,6 +187,10 @@
                     {
                         adminHomeScores[m.Id] = m.HomeScore ?? 0;
                         adminAwayScores[m.Id] = m.AwayScore ?? 0;
+
+                        // Cargamos en memoria el ganador oficial si es que ya existía (para el botón Editar)
+                        adminWinnerTeams[m.Id] = m.WinnerTeamId;
+                        errorMessages[m.Id] = "";
                     }
                 }
             }
@@ -180,61 +199,102 @@
                 Console.WriteLine($"❌ ERROR AL CARGAR PARTIDOS EN ADMIN: {ex.Message}");
             }
 
-            // Marcamos que todo está cargado y seguro, y forzamos el redibujado
             isReady = true;
             StateHasChanged();
         }
     }
 
     private async Task SaveResult(int id)
-    {   
+    {
+        errorMessages[id] = "";
 
-        // 1. Guardamos en la DB
-        await MatchService.UpdateMatchResultAsync(id, adminHomeScores[id], adminAwayScores[id]);
+        var match = matches?.FirstOrDefault(m => m.Id == id);
+        if (match == null) return;
 
-        // 2. ACTUALIZACIÓN LOCAL: En lugar de re-pedir toda la lista,
-        // modificamos el partido en la lista actual de la pantalla.
-        var match = matches.FirstOrDefault(m => m.Id == id);
-        if (match != null)
+        int home = adminHomeScores[id];
+        int away = adminAwayScores[id];
+
+        bool esEliminatoria = match.Phase != null && !match.Phase.Contains("Jornada", StringComparison.OrdinalIgnoreCase);
+        int? winnerTeamId = null;
+
+        // 2. Lógica para calcular o exigir el ganador de eliminatorias
+        if (esEliminatoria)
         {
-            match.IsFinished = true; // Marcamos como terminado para que el botón cambie a "EDITAR"
-            match.HomeScore = adminHomeScores[id];
-            match.AwayScore = adminAwayScores[id];
+            if (home > away)
+            {
+                winnerTeamId = match.HomeTeamId;
+            }
+            else if (away > home)
+            {
+                winnerTeamId = match.AwayTeamId;
+            }
+            else
+            {
+                // Si empatan, verificamos si el Admin clickeó un botón verde de penales
+                if (adminWinnerTeams.TryGetValue(id, out var idGanadorPenales) && idGanadorPenales.HasValue)
+                {
+                    winnerTeamId = idGanadorPenales;
+                }
+                else
+                {
+                    errorMessages[id] = "⚠️ ¡Hay empate real! Elige abajo quién clasificó por penales antes de guardar.";
+                    return; // Frena el guardado oficial
+                }
+            }
         }
 
-        // 3. SignalR: Avisamos a los demás
-        await HubContext.Clients.All.SendAsync("PartidoFinalizado", id);
+        try
+        {
+            // 3. Pasamos los goles y el WinnerTeamId calculado al backend
+            // NOTA IMPORTANTE: Asegúrate de que tu interfaz IMatchService admita el tercer parámetro (int? winnerTeamId)
+            await MatchService.UpdateMatchResultAsync(id, home, away, winnerTeamId);
 
-        // 4. Forzamos a Blazor a redibujar
-        StateHasChanged();
+            // 4. Actualizamos el estado local en pantalla
+            match.IsFinished = true;
+            match.HomeScore = home;
+            match.AwayScore = away;
+            match.WinnerTeamId = winnerTeamId;
+
+            // 5. SignalR: Avisamos en tiempo real al Hub
+            await HubContext.Clients.All.SendAsync("PartidoFinalizado", id);
+
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            errorMessages[id] = "❌ Hubo un error al guardar el resultado oficial en el servidor.";
+        }
     }
-
 
     private async Task SimulateResults()
     {
         if (await JsRuntime.InvokeAsync<bool>("confirm", "¿Quieres simular resultados aleatorios para todos los partidos?"))
         {
             await MatchService.SimulateAllMatchesAsync();
-            matches = await MatchService.GetUpcomingMatchesAsync(); // Refrescar lista local
-        }
-    }
-
-    private async Task ResetResults()
-    {
-        if (await JsRuntime.InvokeAsync<bool>("confirm", "ESTO BORRARÁ TODOS LOS RESULTADOS OFICIALES. ¿Continuar?"))
-        {
-            await MatchService.ResetTournamentAsync(deletePredictions);
-            matches = await MatchService.GetUpcomingMatchesAsync(); // Refrescar lista local
+            await RefreshLocalData();
         }
     }
 
     private async Task ConfirmReset()
     {
         await MatchService.ResetTournamentAsync(deletePredictions);
-        showResetModal = false; // Cerramos el modal
-        
-        // Refrescamos la lista de la pantalla de admin
+        showResetModal = false;
+        await RefreshLocalData();
+    }
+
+    private async Task RefreshLocalData()
+    {
         matches = await MatchService.GetUpcomingMatchesAsync();
+        if (matches != null)
+        {
+            foreach (var m in matches)
+            {
+                adminHomeScores[m.Id] = m.HomeScore ?? 0;
+                adminAwayScores[m.Id] = m.AwayScore ?? 0;
+                adminWinnerTeams[m.Id] = m.WinnerTeamId;
+                errorMessages[m.Id] = "";
+            }
+        }
         StateHasChanged();
     }
 }

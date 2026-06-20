@@ -9,11 +9,14 @@ namespace ProdeMundial.Web.Services
         event Action OnPredictionsCleared; // Nuevo evento
 
         Task<List<Match>> GetUpcomingMatchesAsync();
+
+        Task<List<Team>> GetTeamsAsync();
+
         Task SavePredictionAsync(Prediction prediction);
         
         Task<List<UserRanking>> GetRankingAsync();
 
-        Task UpdateMatchResultAsync(int matchId, int homeScore, int awayScore);
+        Task UpdateMatchResultAsync(int matchId, int homeScore, int awayScore, int? winnerTeamId);
 
         Task<List<Prediction>> GetUserPredictionsAsync(int userId, int companyId);
 

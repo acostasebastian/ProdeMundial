@@ -24,7 +24,17 @@ namespace ProdeMundial.Web.Services
                 .OrderBy(m => m.Date)
                 .ToListAsync();
         }
-       
+
+        public async Task<List<Team>> GetTeamsAsync()
+        {
+            using var context = factory.CreateDbContext();
+
+            return await context.Teams               
+                .ToListAsync();
+        }
+
+        
+
         public async Task SavePredictionAsync(Prediction prediction)
         {
             using var context = factory.CreateDbContext();
@@ -33,7 +43,7 @@ namespace ProdeMundial.Web.Services
             var match = await context.Matches.FindAsync(prediction.MatchId);
             if (match == null) throw new Exception("El partido no existe.");
 
-            if (match.IsFinished || match.Date <= DateTime.Now)
+            if (match.IsFinished || match.Date <= DateTime.UtcNow)
             {
                 throw new Exception("El partido ya comenzó.");
             }
@@ -46,6 +56,7 @@ namespace ProdeMundial.Web.Services
             {
                 existing.PredictedHomeScore = prediction.PredictedHomeScore;
                 existing.PredictedAwayScore = prediction.PredictedAwayScore;
+                existing.WinnerTeamId = prediction.WinnerTeamId;
                 existing.CompanyId = prediction.CompanyId;
 
                 context.Predictions.Update(existing);
@@ -61,6 +72,7 @@ namespace ProdeMundial.Web.Services
                     CompanyId = prediction.CompanyId,
                     PredictedHomeScore = prediction.PredictedHomeScore,
                     PredictedAwayScore = prediction.PredictedAwayScore,
+                    WinnerTeamId = prediction.WinnerTeamId,
                     PointsEarned = 0
                 };
 
@@ -73,13 +85,12 @@ namespace ProdeMundial.Web.Services
         public async Task<List<UserRanking>> GetRankingAsync()
         {            
             return new List<UserRanking>(); 
-        }
-
+        }      
         public async Task<List<UserRanking>> GetRankingAsync(int companyId)
         {
             using var context = factory.CreateDbContext();
 
-            // La base de datos calcula los puntos y los plenos, y nos devuelve solo el DTO final
+            // Modificado para que sume como "Resultado Exacto" tanto si ganó 3 puntos en grupos como 5 en eliminatorias
             return await context.AppUsers
                 .Where(u => u.CompanyId == companyId && u.IsActive)
                 .Select(u => new UserRanking
@@ -87,13 +98,13 @@ namespace ProdeMundial.Web.Services
                     UserId = u.Id,
                     UserName = u.Name,
                     TotalPoints = u.Predictions.Sum(p => p.PointsEarned),
-                    ExactResults = u.Predictions.Count(p => p.PointsEarned == 3)
+                    ExactResults = u.Predictions.Count(p => p.PointsEarned == 3 || p.PointsEarned == 5)
                 })
                 .OrderByDescending(r => r.TotalPoints)
                 .ThenByDescending(r => r.ExactResults)
-                .ToListAsync(); // El ToListAsync se ejecuta al final, viajando por la red solo el ranking procesado
+                .ToListAsync();
         }
-        
+
         private int CalculatePoints(Prediction p)
         {
             // 1. SEGURIDAD: Si el partido no tiene resultado o la predicción está incompleta, 0 puntos.
@@ -125,7 +136,7 @@ namespace ProdeMundial.Web.Services
         }
        
 
-        public async Task UpdateMatchResultAsync(int matchId, int homeScore, int awayScore)
+        public async Task UpdateMatchResultAsync(int matchId, int homeScore, int awayScore, int? winnerTeamId)
         {
             using var context = factory.CreateDbContext();
 
@@ -133,41 +144,109 @@ namespace ProdeMundial.Web.Services
             var match = await context.Matches.FindAsync(matchId);
             if (match == null) throw new Exception("Partido no encontrado");
 
-            match.HomeScore = homeScore; // Asegúrate de que coincida con tus columnas (HomeScore o HomeTeamScore)
+            match.HomeScore = homeScore;
             match.AwayScore = awayScore;
             match.IsFinished = true;
+
+            // ⚽ NUEVO: Guardamos el ID del equipo que clasificó en la realidad
+            match.WinnerTeamId = winnerTeamId;
+
+            // --- DETECCIÓN DE FASE ---            
+            // Unificamos el criterio: si no contiene "Jornada", es eliminatoria (Octavos, Cuartos, etc.)
+            bool esFaseEliminatoria = !match.Phase.Contains("Jornada", StringComparison.OrdinalIgnoreCase);
 
             // 2. Buscar todas las predicciones de los usuarios para ESTE partido
             var predictions = await context.Predictions
                 .Where(p => p.MatchId == matchId)
                 .ToListAsync();
 
-            // 3. Calcular los puntos para cada uno según las reglas de la porra
+            // 3. Calcular los puntos para cada uno según la fase actual del torneo
             foreach (var pred in predictions)
             {
-                if (pred.PredictedHomeScore == homeScore && pred.PredictedAwayScore == awayScore)
+                // Si por alguna razón la predicción no tiene goles (no se completó), le ponemos 0 pts
+                if (!pred.PredictedHomeScore.HasValue || !pred.PredictedAwayScore.HasValue)
                 {
-                    // Caso 1: Resultado Exacto (Pleno) -> 3 puntos
-                    pred.PointsEarned = 3;
+                    pred.PointsEarned = 0;
+                    continue;
                 }
-                else if ((pred.PredictedHomeScore > pred.PredictedAwayScore && homeScore > awayScore) || // Acertó gana Local
-                         (pred.PredictedHomeScore < pred.PredictedAwayScore && homeScore < awayScore) || // Acertó gana Visitante
-                         (pred.PredictedHomeScore == pred.PredictedAwayScore && homeScore == awayScore))  // Acertó Empate
+
+                int pHome = pred.PredictedHomeScore.Value;
+                int pAway = pred.PredictedAwayScore.Value;
+
+                // --- LÓGICA DE PUNTOS PARA FASE DE GRUPOS ---
+                if (!esFaseEliminatoria)
                 {
-                    // Caso 2: Acertó el ganador o el empate pero no el resultado exacto -> 1 punto
-                    pred.PointsEarned = 1;
+                    if (pHome == homeScore && pAway == awayScore)
+                    {
+                        pred.PointsEarned = 3; // Resultado exacto en grupos
+                    }
+                    else if (Math.Sign(homeScore - awayScore) == Math.Sign(pHome - pAway))
+                    {
+                        pred.PointsEarned = 1; // Acertó ganador/empate en grupos
+                    }
+                    else
+                    {
+                        pred.PointsEarned = 0;
+                    }
+                    continue; // Pasa a la siguiente predicción
                 }
+
+                // --- LÓGICA DE PUNTOS PARA ELIMINATORIAS (Tu papel borrador) ---
+                // 1. Escenario Básico: Uno gana en los 90 min (Sin empate real)
+                if (homeScore != awayScore)
+                {
+                    if (pHome == homeScore && pAway == awayScore)
+                    {
+                        pred.PointsEarned = 5; // Resultado exacto
+                    }
+                    else if (Math.Sign(homeScore - awayScore) == Math.Sign(pHome - pAway))
+                    {
+                        pred.PointsEarned = 2; // Acertó ganador pero no goles
+                    }
+                    else
+                    {
+                        pred.PointsEarned = 0;
+                    }
+                }
+                // 2. Escenarios de Empate Real en los 90 mins (Definición por penales)
                 else
                 {
-                    // Caso 3: No pegó ni el resultado ni el ganador -> 0 puntos
-                    pred.PointsEarned = 0;
+                    bool acertoQueEmpataban = (pHome == pAway);
+                    bool acertoClasificado = (pred.WinnerTeamId == winnerTeamId && winnerTeamId.HasValue);
+
+                    if (acertoQueEmpataban)
+                    {
+                        bool mismosGoles = (pHome == homeScore);
+
+                        if (mismosGoles && acertoClasificado)
+                        {
+                            pred.PointsEarned = 5; // Escenario Izquierda: Goles exactos + Clasificado (Ej: 1-1 vs 1-1, pasa A)
+                        }
+                        else if (!mismosGoles && acertoClasificado)
+                        {
+                            pred.PointsEarned = 3; // Caso A: Empate y Clasificado, con otros goles (Ej: 1-1 vs 2-2, pasa A)
+                        }
+                        else if (mismosGoles && !acertoClasificado)
+                        {
+                            pred.PointsEarned = 1; // Caso B: Goles exactos pero erró Clasificado (Ej: 1-1 vs 1-1, pasa B)
+                        }
+                        else if (!mismosGoles && !acertoClasificado)
+                        {
+                            pred.PointsEarned = 1; // Caso C: Empate pero erró goles y erró Clasificado (Ej: 1-1 vs 2-2, pasa B)
+                        }
+                    }
+                    else
+                    {
+                        // Si el partido real fue empate y el usuario puso que ganaba uno en los 90 min, no suma nada
+                        pred.PointsEarned = 0;
+                    }
                 }
             }
 
-            // 4. Guardar todo en un solo bloque transaccional
+            // 4. Guardar todo en un solo bloque transaccional (actualiza el Match y todas las Predictions)
             await context.SaveChangesAsync();
 
-            // 5. ¡Avisar a todos los componentes que los datos cambiaron! (Para SignalR y Blazor)
+            // 5. ¡Avisar a todos los componentes que los datos cambiaron!
             OnResultUpdated?.Invoke();
         }
 
@@ -184,6 +263,7 @@ namespace ProdeMundial.Web.Services
                     .ThenInclude(m => m.AwayTeam) // Corregido el encadenamiento limpio de EF Core
                 .ToListAsync();
         }
+       
 
         public async Task SimulateAllMatchesAsync()
         {
@@ -191,15 +271,56 @@ namespace ProdeMundial.Web.Services
             var matches = await context.Matches.ToListAsync();
             var random = new Random();
 
+            
+
             foreach (var m in matches)
             {
-                m.HomeScore = random.Next(0, 5); // Goles entre 0 y 4
-                m.AwayScore = random.Next(0, 5);
-                m.IsFinished = true;
+                // 1. Inventamos el resultado del partido              
+
+                if (!m.IsFinished)
+                {
+                    m.HomeScore = random.Next(0, 5);
+                    m.AwayScore = random.Next(0, 5);
+                    m.IsFinished = true;
+                }
+
+                // 2. REGLA NUEVA: Detectamos si este partido es de Octavos o superior
+                // Si NO contiene la palabra "Grupos", es una fase eliminatoria (Octavos, Cuartos...)
+                bool esFaseEliminatoria = !m.Phase.Contains("Jornada");
+                int puntosExacto = esFaseEliminatoria ? 5 : 3;    // 5 en octavos, 3 en grupos
+                int puntosResultado = esFaseEliminatoria ? 2 : 1; // 2 en octavos, 1 en grupos
+
+                // 3. Buscamos las predicciones que hicieron los usuarios para ESTE partido concreto
+                var predictions = await context.Predictions
+                    .Where(p => p.MatchId == m.Id)
+                    .ToListAsync();
+
+                // 4. Les asignamos sus puntos en tiempo real antes de guardar
+                foreach (var pred in predictions)
+                {
+                    if (pred.PredictedHomeScore == m.HomeScore && pred.PredictedAwayScore == m.AwayScore)
+                    {
+                        // Marcador exacto (Pleno)
+                        pred.PointsEarned = puntosExacto;
+                    }
+                    else if ((pred.PredictedHomeScore > pred.PredictedAwayScore && m.HomeScore > m.AwayScore) ||
+                             (pred.PredictedHomeScore < pred.PredictedAwayScore && m.HomeScore < m.AwayScore) ||
+                             (pred.PredictedHomeScore == pred.PredictedAwayScore && m.HomeScore == m.AwayScore))
+                    {
+                        // Solo acertó quién ganaba o si empataban
+                        pred.PointsEarned = puntosResultado;
+                    }
+                    else
+                    {
+                        // No acertó nada
+                        pred.PointsEarned = 0;
+                    }
+                }
             }
 
+            // 5. Guardamos en la base de datos tanto los partidos como las predicciones puntuadas
             await context.SaveChangesAsync();
-            OnResultUpdated?.Invoke(); // ¡Esto refresca el Ranking de todos!
+            OnResultUpdated?.Invoke();
         }
 
         public async Task ResetTournamentAsync(bool removePredictions)
@@ -291,7 +412,6 @@ namespace ProdeMundial.Web.Services
             return usu;
         }
            
-
         public async Task<bool> RegisterUserAsync(AppUser user, string invitationCode, string identityInput)
         {
             using var context = factory.CreateDbContext();
@@ -325,8 +445,7 @@ namespace ProdeMundial.Web.Services
             return true;
         }
 
-        // --- CONFIGURACIÓN DE MARCA ---
-     
+        // --- CONFIGURACIÓN DE MARCA ---     
         public async Task<Company> GetConfigAsync(int companyId)
         {
             using var context = factory.CreateDbContext();

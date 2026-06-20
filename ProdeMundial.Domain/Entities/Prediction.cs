@@ -37,4 +37,6 @@ public class Prediction
     public int? PredictedAwayScore { get; set; }
 
     public int PointsEarned { get; set; } = 0;
+
+    public int? WinnerTeamId { get; set; }
 }

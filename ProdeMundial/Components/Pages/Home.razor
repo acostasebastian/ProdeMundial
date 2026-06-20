@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using ProdeMundial.Domain.Entities
 @using ProdeMundial.Web.Services
+@using ProdeMundial.Domain.Enum
 @inject IMatchService MatchService
 @inject UserSession Session
 @implements IDisposable
@@ -38,37 +39,88 @@
     }
     else
     {
-        @* 1. SOLAPAS PRINCIPALES: JORNADAS *@
+        <!-- 1. SOLAPAS PRINCIPALES: JORNADAS -->
+
         <ul class="nav nav-pills nav-fill mb-3 p-1 bg-light rounded-pill shadow-sm" role="tablist">
-            @foreach (var jornada in listaJornadas)
+            @foreach (var jornada in pestañasFases)
             {
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link rounded-pill fw-bold @(jornadaActiva == jornada ? "active bg-primary text-white" : "text-secondary")"
-                            @onclick='() => CambiarJornada(jornada)' type="button">
-                        ⚽ @jornada
+                    <button class="nav-link rounded-pill fw-bold @(jornadaActiva == jornada.Key ? "active bg-primary text-white" : "text-secondary")"
+                            @onclick='() => CambiarJornada(jornada.Key)'
+                            type="button">
+                        ⚽ @jornada.Value
                     </button>
                 </li>
             }
         </ul>
 
-        @* 2. SUBSOLAPAS SECUNDARIAS: BOTONES DE GRUPO (A-L) *@
-  
-        <div class="d-flex flex-wrap gap-1 mb-4 bg-light p-2 rounded-3 shadow-sm justify-content-center">
-            @foreach (var grupo in listaGrupos)
-            {
-                <button class="btn btn-sm fw-bold @(grupoActivo == grupo ? "btn-primary text-white" : "btn-outline-secondary")"
-                        @onclick="() => CambiarGrupo(grupo)" style="min-width: 42px;" type="button">
-                    <span class="d-none d-md-inline">Grupo </span>@grupo
-                </button>
-            }
+     
+        @if (jornadaActiva <= FaseTorneo.Jornada3)
+        {
+            <div class="text-center mb-4 animate__animated animate__fadeIn">
+                <div class="d-flex flex-wrap justify-content-center gap-1 bg-light p-2 rounded-3 shadow-sm mx-auto" style="max-width: 600px;">
+                    @foreach (var grupo in listaGrupos)
+                    {
+                        <button class="btn btn-sm fw-bold @(grupoActivo == grupo ? "btn-primary text-white shadow-sm" : "btn-outline-secondary")"
+                                @onclick="() => CambiarGrupo(grupo)"
+                                style="min-width: 42px;"
+                                type="button">
+                            <span class="d-none d-sm-inline">Grupo </span>@grupo
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        // 1. Calculamos la fase actual para pasarla al componente
+        string faseActualClave = pestañasFases[jornadaActiva];              
+        
+        <div class="accordion mb-3 mx-auto" style="max-width: 600px;">
+            <div class="accordion-item border shadow-sm">
+                <h2 class="accordion-header">
+                    <!--  CAMBIO: Quitamos los atributos data-bs y usamos un @onclick de Blazor -->
+                    <button class="accordion-button @(isRulesExpanded ? "" : "collapsed") py-2 bg-light fw-bold text-secondary"
+                            type="button"
+                            @onclick="ToggleRulesAccordion"
+                            style="font-size: 0.85rem;">
+                        <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                        Ver Sistema de Puntos para @faseActualClave
+                    </button>
+                </h2>
+                <!--  CAMBIO: Controlamos la clase CSS "show" condicionalmente con C# -->
+                <div class="accordion-collapse collapse @(isRulesExpanded ? "show" : "")">
+                    <div class="accordion-body bg-white p-3">
+                        <InfoPuntos FaseActual="@faseActualClave" />
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="row">
-            @* 🔥 CORREGIDO: Ahora buscamos el Grupo a través de HomeTeam *@
+            <!-- 🔥 FILTRO INTELIGENTE CON ENUM -->
             @{
-                var partidosFiltrados = matches
-                    .Where(m => m.Phase != null && m.Phase.Contains(jornadaActiva) && m.HomeTeam?.Group == grupoActivo)
+                bool esEliminatoria = jornadaActiva > FaseTorneo.Jornada3;
+                string nombreFaseString = pestañasFases[jornadaActiva];
+
+                // 1. Obtenemos los IDs de los equipos del grupo seleccionado (ej: "Grupo C" o "C")
+                string letraGrupo = grupoActivo.Contains(" ") ? grupoActivo.Split(' ').Last() : grupoActivo;
+
+                var idsEquiposDelGrupo = (teams ?? new List<Team>())
+                    .Where(t => t.Group != null && t.Group.Trim().Equals(letraGrupo.Trim(), StringComparison.OrdinalIgnoreCase))
+                    .Select(t => t.Id)
                     .ToList();
+
+                // 2. Ahora filtramos los partidos usando esos IDs
+                var partidosFiltrados = matches
+                    .Where(m => m.Phase != null && m.Phase.Contains(nombreFaseString, StringComparison.OrdinalIgnoreCase))
+                    .Where(m =>
+                    {
+                        // Si es eliminatoria (Octavos, Cuartos, etc.), pasan todos los de esa fase directamente
+                        if (esEliminatoria) return true;
+
+                        // Si es fase de grupos, el partido es válido si el local O el visitante pertenecen al grupo activo
+                        return idsEquiposDelGrupo.Contains(m.HomeTeamId ?? 0) || idsEquiposDelGrupo.Contains(m.AwayTeamId ?? 0);
+                    });
             }
 
             @if (partidosFiltrados.Any())
@@ -78,7 +130,7 @@
                     <div class="col-12 col-md-6 col-lg-4 mb-4">
                         @* Card con borde lateral si ya tiene predicción *@
                         <div class="card shadow-sm border-0 h-100 @(HasPrediction(match.Id) ? "border-start border-success border-5" : "")">
-                            
+
                             <div class="card-header bg-light border-0 pt-3 d-flex justify-content-between align-items-center">
                                 <span class="badge bg-dark text-white shadow-sm">@match.Phase</span>
                                 <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">
@@ -99,10 +151,10 @@
                                     }
                                 }
 
-                                @* CONTENEDOR CENTRAL DE INPUTS *@
+                                <!--  CONTENEDOR CENTRAL DE PARIDOS -->
                                 <div class="d-flex align-items-center justify-content-center">
-                                    
-                                    @* LOCAL *@
+
+                                    <!--  LOCAL -->
                                     <div class="text-center" style="width: 80px;">
                                         <img src="@match.HomeTeam?.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
                                         <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
@@ -110,22 +162,28 @@
                                         </div>
                                     </div>
 
-                                    @* CONTENEDOR CENTRAL DE INPUTS *@
+                                    <!-- CONTENEDOR CENTRAL DE INPUTS -->
                                     <div class="mx-2 d-flex align-items-center bg-light p-2 rounded-3 border shadow-sm">
-                                        <input type="number" min="0" max="20" @bind="homeScores[match.Id]" disabled="@(match.IsFinished || DateTime.UtcNow >= match.Date)"
+                                        <input type="number" min="0" max="20"
+                                               @bind="homeScores[match.Id]"
+                                               @bind:after="() => OnGolesCambiados(match)"
+                                               disabled="@(match.IsFinished || DateTime.UtcNow >= match.Date)"
                                                placeholder="-"
                                                class="form-control text-center fw-bold p-0"
                                                style="width: 45px; height: 45px; font-size: 1.4rem; border: 1px solid #ccc; background: white;" />
-                                        
+
                                         <span class="px-2 fw-bold text-muted">-</span>
-                                        
-                                        <input type="number" min="0" max="20" @bind="awayScores[match.Id]" disabled="@(match.IsFinished || DateTime.UtcNow >= match.Date)"
+
+                                        <input type="number" min="0" max="20"
+                                               @bind="awayScores[match.Id]"
+                                               @bind:after="() => OnGolesCambiados(match)"
+                                               disabled="@(match.IsFinished || DateTime.UtcNow >= match.Date)"
                                                placeholder="-"
                                                class="form-control text-center fw-bold p-0"
                                                style="width: 45px; height: 45px; font-size: 1.4rem; border: 1px solid #ccc; background: white;" />
                                     </div>
 
-                                    @* VISITANTE *@
+                                    <!-- VISITANTE -->
                                     <div class="text-center" style="width: 80px;">
                                         <img src="@match.AwayTeam?.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
                                         <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
@@ -133,6 +191,41 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                @if (esEliminatoria)
+                                {
+                                    // Nos aseguramos de que existan valores en los inputs para comparar
+                                    var golesLocal = homeScores.ContainsKey(match.Id) ? homeScores[match.Id] : null;
+                                    var golesVisita = awayScores.ContainsKey(match.Id) ? awayScores[match.Id] : null;
+                                    var idClasificado = clasificadosPenales.ContainsKey(match.Id) ? clasificadosPenales[match.Id] : null;
+
+                                    <div class="text-center mt-2 p-1 rounded" style="background-color: #f8f9fa; border: 1px dashed #dee2e6;">
+                                        <div class="text-muted small mb-1" style="font-size: 0.7rem;">¿Quién clasifica a la siguiente ronda?</div>
+
+                                        <div class="btn-group btn-group-sm w-100 px-3">
+                                            <button type="button"
+                                                    class="btn @(idClasificado == match.HomeTeamId ? "btn-success fw-bold" : "btn-outline-secondary")"
+                                                    disabled="@(golesLocal != golesVisita || match.IsFinished || DateTime.UtcNow >= match.Date)"
+                                                    @onclick="() => clasificadosPenales[match.Id] = match.HomeTeamId">
+                                                Pasa @match.HomeTeam?.Name
+                                            </button>
+
+                                            <button type="button"
+                                                    class="btn @(idClasificado == match.AwayTeamId ? "btn-success fw-bold" : "btn-outline-secondary")"
+                                                    disabled="@(golesLocal != golesVisita || match.IsFinished || DateTime.UtcNow >= match.Date)"
+                                                    @onclick="() => clasificadosPenales[match.Id] = match.AwayTeamId">
+                                                Pasa @match.AwayTeam?.Name
+                                            </button>
+                                        </div>
+
+                                        @if (golesLocal == golesVisita && golesLocal != null && idClasificado == null)
+                                        {
+                                            <div class="text-danger fw-bold mt-1" style="font-size: 0.7rem;">
+                                                ⚠️ ¡Hay empate! Elige a mano quién avanza en penales.
+                                            </div>
+                                        }
+                                    </div>
+                                }
                             </div>
 
                             <div class="card-footer bg-white border-0 pb-3 px-3">
@@ -141,9 +234,10 @@
                                     bool datosCompletos = homeScores.ContainsKey(match.Id) && homeScores[match.Id].HasValue &&
                                                           awayScores.ContainsKey(match.Id) && awayScores[match.Id].HasValue;
 
+
                                     <button class="btn @(HasPrediction(match.Id) ? "btn-outline-success" : "btn-dark") w-100 py-2 fw-bold shadow-sm"
                                             @onclick="() => Save(match.Id)"
-                                            disabled="@(!Session.CurrentUser?.IsActive == true || !datosCompletos)">
+                                            disabled="@(!(Session.CurrentUser?.IsActive == true) || !datosCompletos)">
                                         @if (HasPrediction(match.Id))
                                         {
                                             <span><i class="bi bi-arrow-repeat me-1"></i> Actualizar</span>
@@ -183,16 +277,17 @@
             {
                 <div class="col-12 text-center text-muted my-5">
                     <i class="bi bi-calendar-x fs-1"></i>
-                    <p class="mt-2 fw-bold">No hay partidos cargados para el Grupo @grupoActivo en esta jornada.</p>
+                    <p class="mt-2 fw-bold">No hay partidos cargados para esta fase o grupo actualmente.</p>
                 </div>
             }
         </div>
     }
-</div
+</div>
 
 <div style="display: none;">
     [DEBUG SOMEE] UTC: @DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
 </div>
+
 <div class="floating-btn-container">
     @if (!string.IsNullOrEmpty(globalMessage))
     {
@@ -201,19 +296,25 @@
         </div>
     }
 
+    @* 🔥 BOTÓN FLOTANTE CON FILTRO ADAPTADO *@
     @{
-        @* 🔥 CORREGIDO: Aquí también buscamos el Grupo a través de HomeTeam *@
+        bool esEliminatoriaBtn = jornadaActiva > FaseTorneo.Jornada3;
+        string nombreFaseBtnString = pestañasFases[jornadaActiva];
+
         bool tieneAlgoParaGuardar = matches?
-            .Where(m => m.Phase != null && m.Phase.Contains(jornadaActiva) && m.HomeTeam?.Group == grupoActivo)
+            .Where(m => m.Phase != null &&
+                        // 👇 Cambiamos .Equals por .Contains para que pesque "Jornada 2 - Estadio..."
+                        m.Phase.Contains(nombreFaseBtnString, StringComparison.OrdinalIgnoreCase) &&
+                        (esEliminatoriaBtn || m.HomeTeam?.Group == grupoActivo))
             .Any(m => homeScores.ContainsKey(m.Id) && homeScores[m.Id].HasValue &&
                       awayScores.ContainsKey(m.Id) && awayScores[m.Id].HasValue) ?? false;
     }
 
     <button class="btn btn-success btn-floating"
             @onclick="SaveAll"
-            disabled="@(!Session.CurrentUser?.IsActive == true || !tieneAlgoParaGuardar || isSavingAll)"
+            disabled="@(!(Session.CurrentUser?.IsActive == true) || !tieneAlgoParaGuardar || isSavingAll)"
             title="Guardar visibles">
-        
+
         @if (isSavingAll)
         {
             <span class="spinner-border spinner-border-sm"></span>
@@ -221,16 +322,35 @@
         else
         {
             <i class="bi bi-cloud-check-fill"></i>
-            <span class="d-none d-md-inline ms-1">Guardar Grupo</span>
+            <span class="d-none d-md-inline ms-1">@(esEliminatoriaBtn ? "Guardar Fase" : "Guardar Grupo")</span>
         }
     </button>
 </div>
 
+<!--Estilo para que el boton no lo tape la publicidad-->
+<style>
+    /* Usamos la doble arroba para engañar al compilador de Blazor */
+    @@media (max-width: 767.98px) {
+        .floating-btn-container {
+            bottom: 95px !important;
+            position: fixed !important;
+            z-index: 9999 !important;
+        }
+
+        .container, main, body, .content {
+            padding-bottom: 140px !important;
+        }
+    }
+</style>
 
 @code {
     private List<Match>? matches;
+    private List<Team>? teams;
     private Dictionary<int, int?> homeScores = new();
     private Dictionary<int, int?> awayScores = new();
+    // Guarda el ID del equipo (int) que clasifica para cada ID de partido (int)
+    private Dictionary<int, int?> clasificadosPenales = new Dictionary<int, int?>();
+
 
     private List<Prediction> myPredictions = new();
     private Dictionary<int, string> errorMessages = new();
@@ -238,10 +358,22 @@
     private HubConnection? hubConnection;
 
     // Estados de navegación e interfaz
-    private string jornadaActiva = "Jornada 1";
+
+    private FaseTorneo jornadaActiva = FaseTorneo.Jornada1;
     private string grupoActivo = "A";
 
-    private readonly List<string> listaJornadas = new() { "Jornada 1", "Jornada 2", "Jornada 3" };
+    private readonly Dictionary<FaseTorneo, string> pestañasFases = new()
+    {
+        { FaseTorneo.Jornada1, "Jornada 1" },
+        { FaseTorneo.Jornada2, "Jornada 2" },
+        { FaseTorneo.Jornada3, "Jornada 3" },
+        { FaseTorneo.Dieciseisavos, "16avos" },
+        { FaseTorneo.Octavos, "Octavos" },
+        { FaseTorneo.Cuartos, "Cuartos" },
+        { FaseTorneo.Semifinal, "Semifinal" },
+        { FaseTorneo.Final, "Final" }
+    };
+
     private readonly List<string> listaGrupos = new() { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" };
 
     // Botón de SaveAll
@@ -289,7 +421,7 @@
                 hubConnection.On<int>("PartidoFinalizado", async (matchId) =>
                 {
                     await LoadData();
-                    
+
                     var partidoEncontrado = matches?.FirstOrDefault(m => m.Id == matchId);
                     var miPronostico = myPredictions?.FirstOrDefault(p => p.MatchId == matchId);
 
@@ -320,7 +452,7 @@
             }
         }
     }
-  
+
     private bool HasPrediction(int matchId) => myPredictions.Any(p => p.MatchId == matchId);
 
     private async void HandleUserChanged()
@@ -341,11 +473,12 @@
             return;
 
         matches = await MatchService.GetUpcomingMatchesAsync();
-
         myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser.Id, Session.CurrentCompanyId);
+        teams = await MatchService.GetTeamsAsync();
 
         homeScores.Clear();
         awayScores.Clear();
+        clasificadosPenales.Clear(); // 👈 Limpiamos para no arrastrar basura
 
         if (matches != null)
         {
@@ -357,6 +490,24 @@
                 {
                     homeScores[m.Id] = pred.PredictedHomeScore;
                     awayScores[m.Id] = pred.PredictedAwayScore;
+
+                    // ⚽ NUEVO: Recuperamos el ganador de la base de datos
+                    if (pred.WinnerTeamId.HasValue)
+                    {
+                        clasificadosPenales[m.Id] = pred.WinnerTeamId;
+                    }
+                    // Si no hay penal manual guardado pero es eliminatoria y NO hay empate, calculamos el automático
+                    else if (pred.PredictedHomeScore.HasValue && pred.PredictedAwayScore.HasValue)
+                    {
+                        bool esEliminatoria = m.Phase != null && !m.Phase.Contains("Jornada", StringComparison.OrdinalIgnoreCase);
+                        if (esEliminatoria)
+                        {
+                            if (pred.PredictedHomeScore > pred.PredictedAwayScore)
+                                clasificadosPenales[m.Id] = m.HomeTeamId;
+                            else if (pred.PredictedAwayScore > pred.PredictedHomeScore)
+                                clasificadosPenales[m.Id] = m.AwayTeamId;
+                        }
+                    }
                 }
                 else
                 {
@@ -365,15 +516,15 @@
                 }
             }
         }
-    }
+    }  
 
     private async Task Save(int matchId)
     {
         errorMessages[matchId] = "";
-        
+
         var match = matches?.FirstOrDefault(m => m.Id == matchId);
         if (match == null || Session.CurrentUser == null) return;
-     
+
         if (match.IsFinished || DateTime.UtcNow >= match.Date)
         {
             errorMessages[matchId] = "⛔ El partido ya ha comenzado o finalizado. No se permiten más pronósticos.";
@@ -389,6 +540,26 @@
             return;
         }
 
+        // 1. Validar desempate por penales si es eliminatoria
+        int? winnerTeamId = null;
+
+        bool esEliminatoria = match.Phase != null && !match.Phase.Contains("Jornada", StringComparison.OrdinalIgnoreCase);
+
+        if (esEliminatoria && home.HasValue && away.HasValue)
+        {
+            // Buscamos qué equipo está registrado en el diccionario para este partido
+            if (clasificadosPenales.TryGetValue(matchId, out var idEquipoGanador) && idEquipoGanador.HasValue)
+            {
+                winnerTeamId = idEquipoGanador;
+            }
+            else if (home == away)
+            {
+                // SI HAY EMPATE y no hay nada en el diccionario, obligamos a elegir
+                errorMessages[matchId] = "⚠️ ¡Hay empate! Elige a mano quién avanza en penales.";
+                return;
+            }
+        }
+
         try
         {
             if (home.HasValue && away.HasValue)
@@ -399,11 +570,12 @@
                     UserId = Session.CurrentUser.Id,
                     CompanyId = Session.CurrentCompanyId,
                     PredictedHomeScore = home,
-                    PredictedAwayScore = away
+                    PredictedAwayScore = away,
+                    WinnerTeamId = winnerTeamId // 2. Asignamos el ID del ganador (será null si no aplica)
                 };
 
                 await MatchService.SavePredictionAsync(prediction);
-           
+
                 myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser.Id, Session.CurrentCompanyId);
 
                 showSuccessId = matchId;
@@ -417,7 +589,7 @@
         {
             errorMessages[matchId] = "Hubo un error al guardar.";
         }
-    }
+    }   
 
     private async Task SaveAll()
     {
@@ -428,10 +600,17 @@
         globalMessage = "";
         bool hasAnyError = false;
 
-        @* 🔥 CORREGIDO: Aquí también filtramos usando HomeTeam?.Group *@
+        bool esEliminatoriaSave = jornadaActiva > FaseTorneo.Jornada3;
+        string nombreFaseString = pestañasFases[jornadaActiva];
+
+        // Cambiamos .Equals por .Contains para que matchee con el texto real de tu base de datos
         var partidosVisiblesYValidos = matches
-            .Where(m => m.Phase != null && m.Phase.Contains(jornadaActiva) && m.HomeTeam?.Group == grupoActivo && !m.IsFinished && DateTime.UtcNow < m.Date);
-                
+            .Where(m => m.Phase != null &&
+                        m.Phase.Contains(nombreFaseString, StringComparison.OrdinalIgnoreCase) &&
+                        (esEliminatoriaSave || m.HomeTeam?.Group == grupoActivo) &&
+                        !m.IsFinished && DateTime.UtcNow < m.Date)
+            .ToList();
+
         foreach (var match in partidosVisiblesYValidos)
         {
             var home = homeScores.ContainsKey(match.Id) ? homeScores[match.Id] : null;
@@ -444,6 +623,25 @@
                 continue;
             }
 
+            // ⚽ LÓGICA DE PENALES/GANADOR DIRECTO
+            int? winnerTeamId = null;
+
+            if (esEliminatoriaSave && home.HasValue && away.HasValue)
+            {
+                // Intentamos sacar el ganador (automático o manual por botones) del diccionario
+                if (clasificadosPenales.TryGetValue(match.Id, out var idEquipoGanador) && idEquipoGanador.HasValue)
+                {
+                    winnerTeamId = idEquipoGanador;
+                }
+                else if (home == away)
+                {
+                    // Si empatan en eliminatoria y no eligió botón, marcamos el error en la tarjeta y pasamos al siguiente
+                    errorMessages[match.Id] = "⚠️ ¡Hay empate! Elige a mano quién avanza en penales.";
+                    hasAnyError = true;
+                    continue; // Salta este partido para obligar al usuario a corregirlo antes de guardarlo
+                }
+            }
+
             try
             {
                 if (home.HasValue && away.HasValue)
@@ -454,7 +652,8 @@
                         UserId = Session.CurrentUser.Id,
                         CompanyId = Session.CurrentCompanyId,
                         PredictedHomeScore = home,
-                        PredictedAwayScore = away
+                        PredictedAwayScore = away,
+                        WinnerTeamId = winnerTeamId // 👈 Inyectamos el ID del clasificado
                     };
 
                     await MatchService.SavePredictionAsync(prediction);
@@ -468,18 +667,18 @@
         }
 
         myPredictions = await MatchService.GetUserPredictionsAsync(Session.CurrentUser.Id, Session.CurrentCompanyId);
-        
+
         if (!hasAnyError)
         {
-            globalMessage = $"✅ ¡Grupo {grupoActivo} guardado!";
+            globalMessage = esEliminatoriaSave ? $"✅ ¡Fase {nombreFaseString} guardada!" : $"✅ ¡Grupo {grupoActivo} guardado!";
             StateHasChanged();
             await Task.Delay(3000);
             globalMessage = "";
         }
-    
+
         isSavingAll = false;
         StateHasChanged();
-    }
+    }    
 
     private (string text, string css) GetPredictionResult(Match match)
     {
@@ -492,24 +691,87 @@
 
         int pHome = pred.PredictedHomeScore.Value;
         int pAway = pred.PredictedAwayScore.Value;
-        
+
         int mHome = match.HomeScore.Value;
         int mAway = match.AwayScore.Value;
 
-        bool exact = (pHome == mHome && pAway == mAway);
-        int actualDiff = mHome - mAway;
-        int predDiff = pHome - pAway;
-        bool winner = Math.Sign(actualDiff) == Math.Sign(predDiff);
+        bool esEliminatoria = !match.Phase.Contains("Jornada", StringComparison.OrdinalIgnoreCase);
 
-        if (exact) return ("⭐ ¡Resultado Exacto! (+3 pts)", "alert-success border-success text-success fw-bold");
-        if (winner) return ("✅ Acertaste Resultado (+1 pt)", "alert-info border-info text-info fw-bold");
+        // --- LÓGICA PARA FASE DE GRUPOS ---
+        if (!esEliminatoria)
+        {
+            bool exactGrupos = (pHome == mHome && pAway == mAway);
+            bool winnerGrupos = Math.Sign(mHome - mAway) == Math.Sign(pHome - pAway);
 
+            if (exactGrupos)
+                return ("⭐ ¡Resultado Exacto! (+3 pts)", "alert-success border-success text-success fw-bold");
+            if (winnerGrupos)
+                return ("✅ Acertaste Resultado (+1 pt)", "alert-info border-info text-info fw-bold");
+
+            return ("❌ No acertaste (0 pts)", "alert-danger border-danger text-danger");
+        }
+
+        // --- LÓGICA PARA ELIMINATORIAS (Octavos, Cuartos, etc.) ---
+        // Cruzamos los ganadores reales y pronosticados (pueden venir de los 90 min o de los penales guardados)
+        int? realWinner = match.WinnerTeamId;
+        int? predWinner = pred.WinnerTeamId;
+        bool acertoClasificado = realWinner == predWinner && realWinner.HasValue;
+
+        // 1. ESCENARIO BÁSICO: Uno gana en los 90 min (Sin empate real)
+        if (mHome != mAway)
+        {
+            bool exactEliminatoria = (pHome == mHome && pAway == mAway);
+            bool winnerEliminatoria = Math.Sign(mHome - mAway) == Math.Sign(pHome - pAway);
+
+            if (exactEliminatoria)
+                return ("⭐ ¡Resultado Exacto! (+5 pts)", "alert-success border-success text-success fw-bold");
+            if (winnerEliminatoria)
+                return ("✅ Acertaste Resultado (+2 pts)", "alert-info border-info text-info fw-bold");
+
+            return ("❌ No acertaste (0 pts)", "alert-danger border-danger text-danger");
+        }
+
+        // 2. ESCENARIOS DE EMPATE (Mundial Real quedó en empate en los 90 mins)
+        if (mHome == mAway)
+        {
+            bool acertoQueEmpataban = (pHome == pAway);
+
+            if (acertoQueEmpataban)
+            {
+                bool mismosGoles = (pHome == mHome); // Ej: Real 1-1 y Pred 1-1
+
+                if (mismosGoles && acertoClasificado)
+                {
+                    // Escenario Izquierda: Goles exactos del empate + Clasificado
+                    return ("⭐ ¡Resultado Exacto + Clasificado! (+5 pts)", "alert-success border-success text-success fw-bold");
+                }
+                if (!mismosGoles && acertoClasificado)
+                {
+                    // Caso A: Acertó que empataban y quién pasaba, pero con otros goles (Real 1-1 vs Pred 2-2, pasa A)
+                    return ("⚖️ Acertaste Empate y Clasificado (+3 pts)", "alert-success border-success text-success fw-bold");
+                }
+                if (mismosGoles && !acertoClasificado)
+                {
+                    // Caso B: Goles exactos del empate pero le erró al que pasaba (Real 1-1 vs Pred 1-1, pasa B)
+                    return ("🧤 Acertaste Goles, erraste Clasificado (+1 pt)", "alert-warning border-warning text-warning fw-bold");
+                }
+                if (!mismosGoles && !acertoClasificado)
+                {
+                    // Caso C: Acertó que empataban pero erró goles y erró clasificado (Real 1-1 vs Pred 2-2, pasa B)
+                    return ("⚖️ Acertaste Empate, erraste Clasificado (+1 pt)", "alert-warning border-warning text-warning fw-bold");
+                }
+            }
+        }
+
+        // Si no entra en ninguna de las de arriba, es que no sumó puntos
         return ("❌ No acertaste (0 pts)", "alert-danger border-danger text-danger");
     }
 
-    private void CambiarJornada(string nuevaJornada)
+				
+    private void CambiarJornada(FaseTorneo nuevaJornada)
     {
         jornadaActiva = nuevaJornada;
+        isRulesExpanded = false;
         StateHasChanged();
     }
 
@@ -554,4 +816,39 @@
             Console.WriteLine($"❌ Error al verificar estado: {ex.Message}");
         }
     }
+
+    
+    private void OnGolesCambiados(Match match)
+    {
+        // Verificamos que ambos tengan datos cargados en los diccionarios
+        if (homeScores.TryGetValue(match.Id, out var golesLocal) &&
+            awayScores.TryGetValue(match.Id, out var golesVisita))
+        {
+            if (golesLocal.HasValue && golesVisita.HasValue)
+            {
+                if (golesLocal > golesVisita)
+                {
+                    clasificadosPenales[match.Id] = match.HomeTeamId; // Gana Local automáticamente
+                }
+                else if (golesVisita > golesLocal)
+                {
+                    clasificadosPenales[match.Id] = match.AwayTeamId; // Gana Visita automáticamente
+                }
+                else
+                {
+                    // Es empate: limpiamos para obligar al usuario a elegir con el botón en la UI
+                    clasificadosPenales[match.Id] = null;
+                }
+            }
+        }
+    }
+
+    // 2. Agrega esta variable y este método en tu bloque @code de la página(si no los tienes)
+    private bool isRulesExpanded = false;
+
+    private void ToggleRulesAccordion()
+    {
+        isRulesExpanded = !isRulesExpanded;
+    }
+
 }

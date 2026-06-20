@@ -14,30 +14,28 @@
 
 <div class="container mt-4">
     <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold text-primary">📊 Tabla de Posiciones
+        <h1 class="display-4 fw-bold text-primary">
+            📊 Tabla de Posiciones
             <button class="btn btn-sm btn-outline-secondary rounded-circle ms-2"
                     @onclick="ToggleRules" style="width: 30px; height: 30px; padding: 0;">
                 <i class="bi bi-info-lg"></i>
             </button>
-
         </h1>
-        <p class="lead">Ranking actualizado de la empresa</p>
+        <p class="lead">Ranking actualizado del bar</p>
     </div>
 
-    <div class="text-center mb-4">    
-    
+    <div class="text-center mb-4">
         @if (showRules)
         {
             <div class="alert alert-light border shadow-sm mx-auto animate__animated animate__fadeInDown"
-                 style="max-width: 400px; font-size: 0.85rem;">
+                 style="max-width: 480px; position: relative; padding-top: 2rem;">
+
                 <div class="text-end">
-                    <button type="button" class="btn-close" @onclick="ToggleRules"></button>
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-2" @onclick="ToggleRules"></button>
                 </div>
-                <ul class="text-start list-unstyled mb-0">
-                    <li><strong>✅ 3 Puntos:</strong> Resultado exacto (ej: dijiste 2-1 y salió 2-1).</li>
-                    <li><strong>✅ 1 Punto:</strong> Acertar ganador o empate (ej: dijiste 1-0 y salió 3-0).</li>
-                    <li><strong>⚖️ Desempate:</strong> Si hay igualdad de puntos, sube el que tenga más <strong>resultados exactos</strong>.</li>
-                </ul>
+
+                <InfoPuntos />
+
             </div>
         }
     </div>
@@ -131,7 +129,12 @@
                                     @* --- Línea de Plenos --- *@
                                     <span class="text-muted small" style="font-size: 0.7rem; margin-top: -2px;">
                                         <i class="bi bi-star-fill text-warning me-1" style="font-size: 0.6rem;"></i>
-                                        @user.ExactResults Plenos (@(user.ExactResults * 3) pts)
+                                    @*     @user.ExactResults Plenos (@(user.ExactResults * 3) pts) *@
+                                        @* --- Línea de Plenos modificada --- *@
+                                        <span class="text-muted small" style="font-size: 0.7rem; margin-top: -2px;">
+                                            <i class="bi bi-star-fill text-warning me-1" style="font-size: 0.6rem;"></i>
+                                            @user.ExactResults @(user.ExactResults == 1 ? "Pleno" : "Plenos") acertados
+                                        </span>
                                     </span>
                                 </div>
                             </td>

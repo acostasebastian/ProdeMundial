@@ -49,4 +49,6 @@ public class Match
     [Required]
     [MaxLength(50)]
     public string Phase { get; set; } = "Grupos"; // Grupos, Dieciseisavos, Octavos, etc.
+
+    public int? WinnerTeamId { get; set; }
 }

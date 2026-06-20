@@ -1,0 +1,49 @@
+﻿@code {
+    // Si viene de la pantalla de Predicciones pasamos la fase de la pestaña.
+    // Si no viene nada (como en el Ranking), calcula automáticamente por la fecha de fin de fase de grupso (28/06/2026).
+    [Parameter] public string FaseActual { get; set; } = "";
+
+    private bool esEliminatoria => !string.IsNullOrEmpty(FaseActual)
+        ? !FaseActual.Contains("Jornada", StringComparison.OrdinalIgnoreCase)
+        : DateTime.UtcNow > new DateTime(2026, 6, 28);
+}
+
+<div class="text-start" style="font-size: 0.85rem;">
+
+    @if (!esEliminatoria)
+    {
+        <div class="text-center mb-2">
+            <span class="badge bg-primary text-uppercase px-2 py-1">⚽ Reglas: Fase de Grupos</span>
+        </div>
+        <ul class="list-unstyled mb-0">
+            <li class="mb-2"><strong>✅ 3 Puntos:</strong> Resultado exacto (ej: dijiste 2-1 y salió 2-1).</li>
+            <li class="mb-2"><strong>✅ 1 Punto:</strong> Acertar ganador o empate (ej: dijiste 1-0 y salió 3-0).</li>
+        </ul>
+    }
+    else
+    {
+        <div class="text-center mb-2">
+            <span class="badge bg-success text-uppercase px-2 py-1">🏆 Reglas: Fase Eliminatoria</span>
+        </div>
+        <p class="text-muted small text-center mb-2">¡Partidos a todo o nada! Los puntos cambian:</p>
+
+        <div class="fw-bold text-muted small text-uppercase mb-1">⏱️ En los 90 Minutos:</div>
+        <ul class="list-unstyled mb-3 ps-2">
+            <li><strong>⭐ 5 Puntos:</strong> Marcador exacto (ej: 2-0 vs 2-0).</li>
+            <li><strong>🔸 2 Puntos:</strong> Acertar ganador sin marcador exacto (ej: 1-0 vs 3-1).</li>
+        </ul>
+
+        <div class="fw-bold text-muted small text-uppercase mb-1">🧤 Si van a Definición por Penales:</div>
+        <div class="bg-light p-2 rounded border border-opacity-50 mb-2">
+            <ul class="list-unstyled mb-0" style="font-size: 0.82rem;">
+                <li class="mb-1">🔥 <strong>+5 Pts:</strong> Clavaste el empate exacto y quién clasifica.</li>
+                <li class="mb-1">🟩 <strong>+3 Pts:</strong> Acertaste el empate y el clasificado (con otros goles).</li>
+                <li>🟨 <strong>+1 Pt:</strong> Acertaste que empataban, pero erraste el clasificado.</li>
+            </ul>
+        </div>
+    }
+
+    <div class="border-top pt-2 mt-2 text-muted text-center" style="font-size: 0.8rem;">
+        <strong>⚖️ Desempate General:</strong> Si hay igualdad de puntos, sube el que tenga más <strong>plenos exactos</strong> en todo el torneo.
+    </div>
+</div>
