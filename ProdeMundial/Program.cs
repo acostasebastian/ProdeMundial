@@ -69,7 +69,7 @@ using (var scope = app.Services.CreateScope())
         // OPCIÓN B: Si no tienes archivos de migración aún, usa esto en su lugar:
         // context.Database.EnsureCreated();
 
-        ProdeMundial.Infrastructure.Data.DbInitializer.Seed(context);
+      //  ProdeMundial.Infrastructure.Data.DbInitializer.Seed(context);
     }
     catch (Exception ex)
     {

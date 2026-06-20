@@ -54,7 +54,7 @@
             }
         </ul>
 
-     
+        <!-- GRUPOS EN FASE DE GRUPOS  -->
         @if (jornadaActiva <= FaseTorneo.Jornada3)
         {
             <div class="text-center mb-4 animate__animated animate__fadeIn">
@@ -78,7 +78,7 @@
         <div class="accordion mb-3 mx-auto" style="max-width: 600px;">
             <div class="accordion-item border shadow-sm">
                 <h2 class="accordion-header">
-                    <!--  CAMBIO: Quitamos los atributos data-bs y usamos un @onclick de Blazor -->
+                    <!--  CAMBIO: Quitamos los atributos data-bs y usamos un onclick de Blazor -->
                     <button class="accordion-button @(isRulesExpanded ? "" : "collapsed") py-2 bg-light fw-bold text-secondary"
                             type="button"
                             @onclick="ToggleRulesAccordion"
@@ -128,7 +128,7 @@
                 @foreach (var match in partidosFiltrados)
                 {
                     <div class="col-12 col-md-6 col-lg-4 mb-4">
-                        @* Card con borde lateral si ya tiene predicción *@
+                        <!-- Card con borde lateral si ya tiene predicción -->
                         <div class="card shadow-sm border-0 h-100 @(HasPrediction(match.Id) ? "border-start border-success border-5" : "")">
 
                             <div class="card-header bg-light border-0 pt-3 d-flex justify-content-between align-items-center">
@@ -151,7 +151,7 @@
                                     }
                                 }
 
-                                <!--  CONTENEDOR CENTRAL DE PARIDOS -->
+                                <!--  CONTENEDOR CENTRAL DE PARIDOS  -->
                                 <div class="d-flex align-items-center justify-content-center">
 
                                     <!--  LOCAL -->
@@ -166,6 +166,7 @@
                                     <div class="mx-2 d-flex align-items-center bg-light p-2 rounded-3 border shadow-sm">
                                         <input type="number" min="0" max="20"
                                                @bind="homeScores[match.Id]"
+                                               @bind:event="oninput"
                                                @bind:after="() => OnGolesCambiados(match)"
                                                disabled="@(match.IsFinished || DateTime.UtcNow >= match.Date)"
                                                placeholder="-"
@@ -176,6 +177,7 @@
 
                                         <input type="number" min="0" max="20"
                                                @bind="awayScores[match.Id]"
+                                               @bind:event="oninput"
                                                @bind:after="() => OnGolesCambiados(match)"
                                                disabled="@(match.IsFinished || DateTime.UtcNow >= match.Date)"
                                                placeholder="-"
@@ -191,6 +193,8 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Solo para eliminatorias, quien pasa -->
 
                                 @if (esEliminatoria)
                                 {
@@ -227,6 +231,8 @@
                                     </div>
                                 }
                             </div>
+
+                            <!-- Seccion botones de pronosticos -->
 
                             <div class="card-footer bg-white border-0 pb-3 px-3">
                                 @if (!match.IsFinished && DateTime.UtcNow < match.Date)
@@ -301,19 +307,17 @@
         bool esEliminatoriaBtn = jornadaActiva > FaseTorneo.Jornada3;
         string nombreFaseBtnString = pestañasFases[jornadaActiva];
 
+        // 👇 CORRECCIÓN: Quitamos el filtro "m.HomeTeam?.Group == grupoActivo" para que mire toda la fase
         bool tieneAlgoParaGuardar = matches?
-            .Where(m => m.Phase != null &&
-                        // 👇 Cambiamos .Equals por .Contains para que pesque "Jornada 2 - Estadio..."
-                        m.Phase.Contains(nombreFaseBtnString, StringComparison.OrdinalIgnoreCase) &&
-                        (esEliminatoriaBtn || m.HomeTeam?.Group == grupoActivo))
-            .Any(m => homeScores.ContainsKey(m.Id) && homeScores[m.Id].HasValue &&
-                      awayScores.ContainsKey(m.Id) && awayScores[m.Id].HasValue) ?? false;
+            .Where(m => m.Phase != null && m.Phase.Contains(nombreFaseBtnString, StringComparison.OrdinalIgnoreCase))
+            .Any(m => (homeScores.ContainsKey(m.Id) && homeScores[m.Id].HasValue) ||
+                      (awayScores.ContainsKey(m.Id) && awayScores[m.Id].HasValue)) ?? false;
     }
 
     <button class="btn btn-success btn-floating"
             @onclick="SaveAll"
             disabled="@(!(Session.CurrentUser?.IsActive == true) || !tieneAlgoParaGuardar || isSavingAll)"
-            title="Guardar visibles">
+            title="Guardar todos los cambios">
 
         @if (isSavingAll)
         {
@@ -322,7 +326,7 @@
         else
         {
             <i class="bi bi-cloud-check-fill"></i>
-            <span class="d-none d-md-inline ms-1">@(esEliminatoriaBtn ? "Guardar Fase" : "Guardar Grupo")</span>
+            <span class="d-none d-md-inline ms-1">Guardar Pronósticos</span>
         }
     </button>
 </div>
@@ -603,11 +607,11 @@
         bool esEliminatoriaSave = jornadaActiva > FaseTorneo.Jornada3;
         string nombreFaseString = pestañasFases[jornadaActiva];
 
-        // Cambiamos .Equals por .Contains para que matchee con el texto real de tu base de datos
+      
+        // 👇 CORRECCIÓN: Quitamos el filtro de grupoActivo para que el guardado masivo aplique a toda la fase
         var partidosVisiblesYValidos = matches
             .Where(m => m.Phase != null &&
                         m.Phase.Contains(nombreFaseString, StringComparison.OrdinalIgnoreCase) &&
-                        (esEliminatoriaSave || m.HomeTeam?.Group == grupoActivo) &&
                         !m.IsFinished && DateTime.UtcNow < m.Date)
             .ToList();
 
