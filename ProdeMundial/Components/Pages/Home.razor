@@ -149,16 +149,26 @@
                                             @result.text (Real: @match.HomeScore - @match.AwayScore)
                                         </div>
                                     }
-                                }
+                                }                      
 
-                                <!--  CONTENEDOR CENTRAL DE PARIDOS  -->
+                                <!--  CONTENEDOR CENTRAL DE PARTIDOS  -->
                                 <div class="d-flex align-items-center justify-content-center">
 
                                     <!--  LOCAL -->
-                                    <div class="text-center" style="width: 80px;">
-                                        <img src="@match.HomeTeam?.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
-                                        <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
-                                            @match.HomeTeam?.Name
+                                    <div class="text-center d-flex flex-column align-items-center justify-content-start" style="width: 85px;">
+                                        @if (match.HomeTeam != null && !string.IsNullOrEmpty(match.HomeTeam.FlagUrl))
+                                        {
+                                            <img src="@match.HomeTeam.FlagUrl" height="30" class="shadow-sm rounded mb-1" alt="Flag" />
+                                        }
+                                        else
+                                        {
+                                            <!-- Icono de marcador de posición limpio si no hay equipo definido -->
+                                            <div class="text-muted mb-1 d-flex align-items-center justify-content-center" style="height: 30px;">
+                                                <i class="bi bi-question-circle-fill fs-4 text-black-50"></i>
+                                            </div>
+                                        }
+                                        <div class="fw-bold" style="font-size: 0.72rem; line-height: 1.1; display: block; height: 2.4rem; overflow: hidden; text-overflow: ellipsis;">
+                                            @(match.HomeTeam != null ? match.HomeTeam.Name : (!string.IsNullOrEmpty(match.HomeTeamPlaceholder) ? match.HomeTeamPlaceholder : "Por definir"))
                                         </div>
                                     </div>
 
@@ -186,43 +196,61 @@
                                     </div>
 
                                     <!-- VISITANTE -->
-                                    <div class="text-center" style="width: 80px;">
-                                        <img src="@match.AwayTeam?.FlagUrl" height="30" class="shadow-sm rounded mb-1" />
-                                        <div class="fw-bold" style="font-size: 0.75rem; line-height: 1; display: block; height: 2.2rem; overflow: hidden;">
-                                            @match.AwayTeam?.Name
+                                    <div class="text-center d-flex flex-column align-items-center justify-content-start" style="width: 85px;">
+                                        @if (match.AwayTeam != null && !string.IsNullOrEmpty(match.AwayTeam.FlagUrl))
+                                        {
+                                            <img src="@match.AwayTeam.FlagUrl" height="30" class="shadow-sm rounded mb-1" alt="Flag" />
+                                        }
+                                        else
+                                        {
+                                            <!-- Icono de marcador de posición limpio si no hay equipo definido -->
+                                            <div class="text-muted mb-1 d-flex align-items-center justify-content-center" style="height: 30px;">
+                                                <i class="bi bi-question-circle-fill fs-4 text-black-50"></i>
+                                            </div>
+                                        }
+                                        <div class="fw-bold" style="font-size: 0.72rem; line-height: 1.1; display: block; height: 2.4rem; overflow: hidden; text-overflow: ellipsis;">
+                                            @(match.AwayTeam != null ? match.AwayTeam.Name : (!string.IsNullOrEmpty(match.AwayTeamPlaceholder) ? match.AwayTeamPlaceholder : "Por definir"))
                                         </div>
                                     </div>
+
                                 </div>
 
                                 <!-- Solo para eliminatorias, quien pasa -->
 
                                 @if (esEliminatoria)
-                                {
+                                {                           
                                     // Nos aseguramos de que existan valores en los inputs para comparar
                                     var golesLocal = homeScores.ContainsKey(match.Id) ? homeScores[match.Id] : null;
                                     var golesVisita = awayScores.ContainsKey(match.Id) ? awayScores[match.Id] : null;
-                                    var idClasificado = clasificadosPenales.ContainsKey(match.Id) ? clasificadosPenales[match.Id] : null;
+
+                                    // Convertimos todo a string para la validación visual en los botones
+                                    var idClasificadoStr = clasificadosPenales.ContainsKey(match.Id) ? clasificadosPenales[match.Id]?.ToString() : null;
+
+                                    var currentHomeIdStr = match.HomeTeamId?.ToString() ?? match.HomeTeamPlaceholder ?? "Home";
+                                    var currentAwayIdStr = match.AwayTeamId?.ToString() ?? match.AwayTeamPlaceholder ?? "Away";
 
                                     <div class="text-center mt-2 p-1 rounded" style="background-color: #f8f9fa; border: 1px dashed #dee2e6;">
                                         <div class="text-muted small mb-1" style="font-size: 0.7rem;">¿Quién clasifica a la siguiente ronda?</div>
 
                                         <div class="btn-group btn-group-sm w-100 px-3">
+                                            <!-- BOTÓN PASA LOCAL -->
                                             <button type="button"
-                                                    class="btn @(idClasificado == match.HomeTeamId ? "btn-success fw-bold" : "btn-outline-secondary")"
+                                                    class="btn @(idClasificadoStr == currentHomeIdStr ? "btn-success fw-bold" : "btn-outline-secondary")"
                                                     disabled="@(golesLocal != golesVisita || match.IsFinished || DateTime.UtcNow >= match.Date)"
                                                     @onclick="() => clasificadosPenales[match.Id] = match.HomeTeamId">
-                                                Pasa @match.HomeTeam?.Name
+                                                Pasa @(match.HomeTeam != null ? match.HomeTeam.Name : (!string.IsNullOrEmpty(match.HomeTeamPlaceholder) ? match.HomeTeamPlaceholder : "Local"))
                                             </button>
 
+                                            <!-- BOTÓN PASA VISITANTE -->
                                             <button type="button"
-                                                    class="btn @(idClasificado == match.AwayTeamId ? "btn-success fw-bold" : "btn-outline-secondary")"
+                                                    class="btn @(idClasificadoStr == currentAwayIdStr ? "btn-success fw-bold" : "btn-outline-secondary")"
                                                     disabled="@(golesLocal != golesVisita || match.IsFinished || DateTime.UtcNow >= match.Date)"
                                                     @onclick="() => clasificadosPenales[match.Id] = match.AwayTeamId">
-                                                Pasa @match.AwayTeam?.Name
+                                                Pasa @(match.AwayTeam != null ? match.AwayTeam.Name : (!string.IsNullOrEmpty(match.AwayTeamPlaceholder) ? match.AwayTeamPlaceholder : "Visitante"))
                                             </button>
                                         </div>
 
-                                        @if (golesLocal == golesVisita && golesLocal != null && idClasificado == null)
+                                        @if (golesLocal == golesVisita && golesLocal != null && idClasificadoStr == null)
                                         {
                                             <div class="text-danger fw-bold mt-1" style="font-size: 0.7rem;">
                                                 ⚠️ ¡Hay empate! Elige a mano quién avanza en penales.
@@ -714,12 +742,21 @@
 
             return ("❌ No acertaste (0 pts)", "alert-danger border-danger text-danger");
         }
-
+        
         // --- LÓGICA PARA ELIMINATORIAS (Octavos, Cuartos, etc.) ---
         // Cruzamos los ganadores reales y pronosticados (pueden venir de los 90 min o de los penales guardados)
         int? realWinner = match.WinnerTeamId;
         int? predWinner = pred.WinnerTeamId;
         bool acertoClasificado = realWinner == predWinner && realWinner.HasValue;
+
+        // Buscamos el nombre del equipo real que pasó para el texto del cartel
+        string nombreClasificadoReal = "";
+        if (realWinner.HasValue)
+        {
+            if (realWinner == match.HomeTeamId) nombreClasificadoReal = match.HomeTeam?.Name;
+            else if (realWinner == match.AwayTeamId) nombreClasificadoReal = match.AwayTeam?.Name;
+        }
+        string textoClasificado = !string.IsNullOrEmpty(nombreClasificadoReal) ? $" (Pasó: {nombreClasificadoReal})" : "";
 
         // 1. ESCENARIO BÁSICO: Uno gana en los 90 min (Sin empate real)
         if (mHome != mAway)
@@ -728,11 +765,15 @@
             bool winnerEliminatoria = Math.Sign(mHome - mAway) == Math.Sign(pHome - pAway);
 
             if (exactEliminatoria)
-                return ("⭐ ¡Resultado Exacto! (+5 pts)", "alert-success border-success text-success fw-bold");
+                return ($"⭐ ¡Resultado Exacto! (+5 pts){textoClasificado}", "alert-success border-success text-success fw-bold");
             if (winnerEliminatoria)
-                return ("✅ Acertaste Resultado (+2 pts)", "alert-info border-info text-info fw-bold");
+                return ($"✅ Acertaste Resultado (+2 pts){textoClasificado}", "alert-info border-info text-info fw-bold");
 
-            return ("❌ No acertaste (0 pts)", "alert-danger border-danger text-danger");
+            // 🔥 NUEVO: Caso Consuelo 1 (Erró los 90 min, pero acertó el clasificado final)
+            if (acertoClasificado)
+                return ($"🎯 Consuelo: Acertaste Clasificado (+1 pt){textoClasificado}", "alert-warning border-warning text-warning fw-bold");
+
+            return ($"❌ No acertaste (0 pts){textoClasificado}", "alert-danger border-danger text-danger");
         }
 
         // 2. ESCENARIOS DE EMPATE (Mundial Real quedó en empate en los 90 mins)
@@ -746,29 +787,32 @@
 
                 if (mismosGoles && acertoClasificado)
                 {
-                    // Escenario Izquierda: Goles exactos del empate + Clasificado
-                    return ("⭐ ¡Resultado Exacto + Clasificado! (+5 pts)", "alert-success border-success text-success fw-bold");
+                    return ($"⭐ ¡Resultado Exacto + Clasificado! (+5 pts){textoClasificado}", "alert-success border-success text-success fw-bold");
                 }
                 if (!mismosGoles && acertoClasificado)
                 {
-                    // Caso A: Acertó que empataban y quién pasaba, pero con otros goles (Real 1-1 vs Pred 2-2, pasa A)
-                    return ("⚖️ Acertaste Empate y Clasificado (+3 pts)", "alert-success border-success text-success fw-bold");
+                    return ($"⚖️ Acertaste Empate y Clasificado (+3 pts){textoClasificado}", "alert-success border-success text-success fw-bold");
                 }
                 if (mismosGoles && !acertoClasificado)
                 {
-                    // Caso B: Goles exactos del empate pero le erró al que pasaba (Real 1-1 vs Pred 1-1, pasa B)
-                    return ("🧤 Acertaste Goles, erraste Clasificado (+1 pt)", "alert-warning border-warning text-warning fw-bold");
+                    return ($"🧤 Acertaste Goles, erraste Clasificado (+1 pt){textoClasificado}", "alert-warning border-warning text-warning fw-bold");
                 }
                 if (!mismosGoles && !acertoClasificado)
                 {
-                    // Caso C: Acertó que empataban pero erró goles y erró clasificado (Real 1-1 vs Pred 2-2, pasa B)
-                    return ("⚖️ Acertaste Empate, erraste Clasificado (+1 pt)", "alert-warning border-warning text-warning fw-bold");
+                    return ($"⚖️ Acertaste Empate, erraste Clasificado (+1 pt){textoClasificado}", "alert-warning border-warning text-warning fw-bold");
                 }
+            }
+            else
+            {
+                // 🔥 NUEVO: Caso Consuelo 2 (El de image_0a0ad3.png)
+                // Pusiste que ganaba uno en los 90 min, el real fue empate, pero le pegaste al que pasó por penales
+                if (acertoClasificado)
+                    return ($"🎯 Consuelo: Acertaste Clasificado (+1 pt){textoClasificado}", "alert-warning border-warning text-warning fw-bold");
             }
         }
 
         // Si no entra en ninguna de las de arriba, es que no sumó puntos
-        return ("❌ No acertaste (0 pts)", "alert-danger border-danger text-danger");
+        return ($"❌ No acertaste (0 pts){textoClasificado}", "alert-danger border-danger text-danger");
     }
 
 				

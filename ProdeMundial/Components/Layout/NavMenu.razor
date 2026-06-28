@@ -9,9 +9,11 @@
     </div>
 </div>
 
-<div class="nav-scrollable">
+<!-- =============================================================== -->
+<!-- VISTA PC / DESKTOP (Vuelve a tu diseño original intacto)      -->
+<!-- =============================================================== -->
+<div class="nav-scrollable d-none d-md-block">
     <nav class="flex-column">
-        
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <i class="bi bi-house-door-fill me-2"></i> Mis Predicciones
@@ -22,7 +24,7 @@
                 <i class="bi bi-trophy-fill me-2"></i> Tabla de Posiciones
             </NavLink>
         </div>
-        
+
         @if (isReady)
         {
             @if (Session.CurrentUser != null && Session.CurrentUser.IsAdmin && !Session.IsSuperAdmin)
@@ -41,24 +43,71 @@
                         <span class="bi bi-building-fill-add me-2" aria-hidden="true"></span> Alta de Bares (SaaS)
                     </NavLink>
                 </div>
-
                 <div class="nav-item px-3 mt-2">
                     <NavLink class="nav-link bg-warning bg-opacity-10 text-warning rounded" href="admin">
                         <span class="bi bi-calendar-check-fill me-2" aria-hidden="true"></span> Cargar Resultados
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3 mt-2">
+                    <NavLink class="nav-link bg-primary bg-opacity-10 text-primary rounded" href="admin/partidos">
+                        <span class="bi bi-calendar-plus-fill me-2" aria-hidden="true"></span> Cargar Fixture
                     </NavLink>
                 </div>
             }
         }
         else
         {
-            <div class="text-center py-2 text-muted style="opacity: 0.5;">
+            <div class="text-center py-2 text-muted" style="opacity: 0.5;">
                 <span class="spinner-border spinner-border-sm" role="status"></span>
             </div>
         }
-     
     </nav>
 </div>
 
+<!-- =============================================================== -->
+<!-- VISTA MOBILE (Barra horizontal nativa sin conflictos CSS)       -->
+<!-- =============================================================== -->
+<div class="d-md-none bg-white border-bottom shadow-sm">
+    <div class="d-flex flex-row justify-content-around align-items-center w-100 py-1">
+
+        <!-- Predicciones -->
+        <NavLink class="text-decoration-none text-dark flex-fill text-center py-1 border-end" href="" Match="NavLinkMatch.All" ActiveClass="text-primary fw-bold">
+            <i class="bi bi-house-door-fill fs-5 d-block mb-1"></i>
+            <span style="font-size: 0.75rem;"> Mis Predicciones</span>
+        </NavLink>
+
+        <!-- Posiciones -->
+        <NavLink class="text-decoration-none text-dark flex-fill text-center py-1" href="ranking" ActiveClass="text-primary fw-bold">
+            <i class="bi bi-trophy-fill fs-5 d-block mb-1"></i>
+            <span style="font-size: 0.75rem;">Tabla de Posiciones</span>
+        </NavLink>
+
+        @if (isReady)
+        {
+            <!-- Admin (Bar) -->
+            @if (Session.CurrentUser != null && Session.CurrentUser.IsAdmin && !Session.IsSuperAdmin)
+            {
+                <NavLink class="text-decoration-none text-secondary flex-fill text-center py-1 border-start" href="settings" ActiveClass="text-primary fw-bold">
+                    <i class="bi bi-gear-fill fs-5 d-block mb-1"></i>
+                    <span style="font-size: 0.75rem;">Ajustes</span>
+                </NavLink>
+            }
+
+            <!-- Super Admin (Mini iconos agrupados) -->
+            @if (Session.IsSuperAdmin)
+            {
+                <div class="flex-fill text-center border-start py-1">
+                    <div class="d-flex justify-content-center gap-2 mb-1">
+                        <a href="superadmin" class="text-danger"><i class="bi bi-building-fill-add fs-6"></i></a>
+                        <a href="admin" class="text-warning"><i class="bi bi-calendar-check-fill fs-6"></i></a>
+                        <a href="admin/partidos" class="text-primary"><i class="bi bi-calendar-plus-fill fs-6"></i></a>
+                    </div>
+                    <span style="font-size: 0.65rem; color: #6c757d;">Admin</span>
+                </div>
+            }
+        }
+    </div>
+</div>
 
 @code {
 

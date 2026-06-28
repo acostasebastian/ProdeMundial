@@ -39,13 +39,23 @@
 
                     <div class="list-group-item p-3 mb-3 shadow-sm border rounded bg-white">
 
-                        <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-between">                          
 
+                            <!-- BLOQUE EQUIPO LOCAL -->
                             <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 0;">
                                 <span class="fw-bold me-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    @match.HomeTeam.Name
+                                    @(match.HomeTeam != null ? match.HomeTeam.Name : (!string.IsNullOrEmpty(match.HomeTeamPlaceholder) ? match.HomeTeamPlaceholder : "Por definir"))
                                 </span>
-                                <img src="@match.HomeTeam.FlagUrl" width="28" class="shadow-sm rounded flex-shrink-0" />
+
+                                @if (match.HomeTeam != null && !string.IsNullOrEmpty(match.HomeTeam.FlagUrl))
+                                {
+                                    <img src="@match.HomeTeam.FlagUrl" style="width: 24px; height: 16px; object-fit: cover;" class="rounded shadow-sm" />
+                                }
+                                else
+                                {
+                                    <!-- Icono o bandera genérica si no hay equipo real -->
+                                    <span class="fs-6 me-1">❓</span>
+                                }
                             </div>
 
                             <div class="d-flex align-items-center justify-content-center px-2" style="width: 110px;">
@@ -53,16 +63,21 @@
                                 <span class="mx-1 fw-bold text-muted">-</span>
                                 <input type="number" @bind="adminAwayScores[match.Id]" class="marcador-input text-center fw-bold" style="width: 40px; height: 40px; font-size: 1rem;" />
                             </div>
-
+                                                     
+                            <!-- BLOQUE EQUIPO VISITANTE -->
                             <div class="d-flex align-items-center justify-content-start" style="flex: 1; min-width: 0;">
-                                <img src="@match.AwayTeam.FlagUrl" width="28" class="shadow-sm rounded flex-shrink-0" />
-                                <span class="fw-bold ms-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    @match.AwayTeam.Name
-                                </span>
-                                @if (match.IsFinished)
+                                @if (match.AwayTeam != null && !string.IsNullOrEmpty(match.AwayTeam.FlagUrl))
                                 {
-                                    <i class="bi bi-check-circle-fill text-success ms-2" title="Partido Finalizado"></i>
+                                    <img src="@match.AwayTeam.FlagUrl" style="width: 24px; height: 16px; object-fit: cover;" class="rounded shadow-sm" />
                                 }
+                                else
+                                {
+                                    <span class="fs-6 ms-1">❓</span>
+                                }
+
+                                <span class="fw-bold ms-2 text-uppercase d-none d-md-inline" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    @(match.AwayTeam != null ? match.AwayTeam.Name : (!string.IsNullOrEmpty(match.AwayTeamPlaceholder) ? match.AwayTeamPlaceholder : "Por definir"))
+                                </span>
                             </div>
 
                             <div class="ms-3 ps-3 border-start">

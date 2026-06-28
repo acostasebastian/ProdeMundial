@@ -12,21 +12,41 @@
     </div>
 
     <main>
-        <div class="top-row px-4 d-flex align-items-center justify-content-between shadow-sm bg-white w-100" style="height: 85px; border-bottom: 2px solid #eee;">
-    
-            @* GRUPO IZQUIERDO: LOGO + INFO DEL BAR *@
-            <div class="d-flex align-items-center">
+       @*  <div class="top-row px-4 d-flex align-items-center justify-content-between shadow-sm bg-white w-100" style="height: 85px; border-bottom: 2px solid #eee;"> *@
+        <!-- Cambiamos height: 85px; por min-height: 85px; y agregamos py-2 por si se estira -->
+        <div class="top-row px-4 d-flex align-items-center justify-content-between shadow-sm bg-white w-100 py-2"
+             style="min-height: 85px; border-bottom: 2px solid #eee;">  
+          
+
+            
+            <div class="d-flex align-items-center flex-wrap py-2" style="max-width: 65%;">
                 @if (!string.IsNullOrEmpty(config.LogoUrl))
                 {
-                    <div class="bg-dark rounded p-1 me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 65px; height: 65px;">
+                    <div class="bg-dark rounded p-1 me-3 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 65px; height: 65px;">
                         <img src="@config.LogoUrl" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
                     </div>
                 }
-                <div>
+                <div style="min-width: 0;">
                     <h4 class="mb-0 fw-bold text-dark" style="font-size: 1.1rem;">@config.Name</h4>
-                    <div class="text-primary fw-bold small">
-                        <i class="bi bi-trophy-fill"></i> @config.PrizeDescription
-                    </div>
+
+                    @if (!string.IsNullOrEmpty(config.PrizeDescription))
+                    {
+                        <!-- Contenedor flex que se adapta en mobile haciendo fila o saltando de línea ordenadamente -->
+                        <div class="d-flex flex-wrap gap-1 align-items-center mt-1" style="line-height: 1.2;">
+                            <span class="text-secondary fw-bold" style="font-size: 0.72rem; margin-right: 2px;">
+                                <i class="bi bi-trophy-fill text-primary"></i> Premios:
+                            </span>
+
+                            @* Separamos el string por el carácter '|' *@
+                            @foreach (var premio in config.PrizeDescription.Replace("Premios:", "").Split('|', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1 px-2"
+                                      style="font-size: 0.68rem; font-weight: 600; letter-spacing: 0.3px;">
+                                    @premio.Trim()
+                                </span>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
 

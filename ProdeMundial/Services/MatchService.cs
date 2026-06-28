@@ -202,10 +202,13 @@ namespace ProdeMundial.Web.Services
                     else if (Math.Sign(homeScore - awayScore) == Math.Sign(pHome - pAway))
                     {
                         pred.PointsEarned = 2; // Acertó ganador pero no goles
-                    }
+                    }               
+
                     else
                     {
-                        pred.PointsEarned = 0;
+                        // ⚽ NUEVO: Erró el partido de los 90 min, pero ¿le pegó a quién clasificaba?
+                        bool acertoClasificadoExtra = (pred.WinnerTeamId == winnerTeamId && winnerTeamId.HasValue);
+                        pred.PointsEarned = acertoClasificadoExtra ? 1 : 0;
                     }
                 }
                 // 2. Escenarios de Empate Real en los 90 mins (Definición por penales)
@@ -237,8 +240,9 @@ namespace ProdeMundial.Web.Services
                     }
                     else
                     {
-                        // Si el partido real fue empate y el usuario puso que ganaba uno en los 90 min, no suma nada
-                        pred.PointsEarned = 0;
+                        // 🔥 CORREGIDO: El partido real fue empate, el usuario puso que ganaba uno en los 90 min...
+                        // Pero si le pegó al que avanzó en la tanda de penales, ¡le damos 1 punto!
+                        pred.PointsEarned = acertoClasificado ? 1 : 0;
                     }
                 }
             }

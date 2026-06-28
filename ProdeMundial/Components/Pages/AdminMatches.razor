@@ -1,0 +1,247 @@
+﻿@page "/admin/partidos"
+@using Microsoft.EntityFrameworkCore
+@using ProdeMundial.Infrastructure
+@using ProdeMundial.Domain.Entities
+@using ProdeMundial.Web.Services
+@inject ApplicationDbContext Context
+@inject UserSession Session
+@inject NavigationManager NavManager
+
+<div class="container mt-4 mb-5">
+
+    @if (!isReady)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Verificando credenciales de Administrador...</p>
+        </div>
+    }
+    else
+    {
+        <div class="text-center mb-4">
+            <h2 class="display-4 fw-bold text-primary">Porra Mundial 2026</h2>
+            <p class="lead">Panel de Administración de Partidos</p>
+        </div>
+
+        <!-- 🔔 NOTIFICACIÓN DE ÉXITO -->
+        @if (showSuccessAlert)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>¡Listo!</strong> El partido se guardó correctamente en producción.
+            </div>
+        }
+
+        <!-- CARD FORMULARIO (SOPORTA CARGA Y EDICIÓN) -->
+        <div class="card p-3 shadow-sm mb-4 bg-white border rounded">
+            <h5 class="fw-bold mb-3 text-secondary">@(isEditing ? "✏️ Editar Partido Seleccionado" : "➕ Cargar Nuevo Partido")</h5>
+            <EditForm Model="@newMatch" OnValidSubmit="HandleSaveMatch">
+                <DataAnnotationsValidator />
+
+                <!-- FASE DEL TORNEO -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Fase</label>
+                    <InputSelect @bind-Value="newMatch.Phase" class="form-control">
+                        <option value="16avos de Final">16avos de Final</option>
+                        <option value="Octavos de Final">Octavos de Final</option>
+                        <option value="Cuartos de Final">Cuartos de Final</option>
+                        <option value="Semifinal">Semifinal</option>
+                        <option value="Final">Final</option>
+                    </InputSelect>
+                </div>
+
+                <!-- FECHA Y HORA -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Fecha y Hora (Local/UTC)</label>
+                    <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="newMatch.Date" class="form-control" />
+                </div>
+
+                <div class="row">
+                    <!-- COLUMNA LOCAL -->
+                    <div class="col-6 mb-3">
+                        <h5 class="text-primary fw-bold">Local</h5>
+                        <div class="mb-2">
+                            <label class="form-label text-muted small">Equipo</label>
+                            <InputSelect @bind-Value="newMatch.HomeTeamId" class="form-control">
+                                <option value="">-- Selección (O vacío) --</option>
+                                @foreach (var team in teams)
+                                {
+                                    <option value="@team.Id">@team.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div>
+                            <label class="form-label text-muted small">Texto Alternativo (Placeholder)</label>
+                            <InputText @bind-Value="newMatch.HomeTeamPlaceholder" class="form-control" placeholder="Ej: 1º Grupo A" />
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA VISITANTE -->
+                    <div class="col-6 mb-3">
+                        <h5 class="text-danger fw-bold">Visitante</h5>
+                        <div class="mb-2">
+                            <label class="form-label text-muted small">Equipo</label>
+                            <InputSelect @bind-Value="newMatch.AwayTeamId" class="form-control">
+                                <option value="">-- Selección (O vacío) --</option>
+                                @foreach (var team in teams)
+                                {
+                                    <option value="@team.Id">@team.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div>
+                            <label class="form-label text-muted small">Texto Alternativo (Placeholder)</label>
+                            <InputText @bind-Value="newMatch.AwayTeamPlaceholder" class="form-control" placeholder="Ej: 2º Grupo B" />
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn @(isEditing ? "btn-warning" : "btn-success") w-100 mt-3 py-2 fw-bold shadow-sm">
+                    @(isEditing ? "💾 Guardar Cambios en Producción" : "💾 Guardar Partido en Producción")
+                </button>
+
+                @if (isEditing)
+                {
+                    <button type="button" class="btn btn-secondary w-100 mt-2 fw-bold" @onclick="CancelEdit">Cancelar Edición</button>
+                }
+            </EditForm>
+        </div>
+
+        <!-- 📝 LISTADO DE PARTIDOS FILTRADOS -->
+        <h4 class="mt-4 mb-3 fw-bold text-danger"><i class="bi bi-gear-fill"></i> Matches Registrados (No finalizados)</h4>
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-striped align-middle bg-white mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Fase / Fecha</th>
+                        <th>Cruce</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (existingMatches == null || !existingMatches.Any())
+                    {
+                        <tr>
+                            <td colspan="3" class="text-center text-muted p-4">No hay partidos pendientes de jugar en las fases eliminatorias.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var m in existingMatches)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary mb-1">@m.Phase</span><br />
+                                    <small class="text-muted fw-bold">@m.Date.ToString("dd/MM HH:mm") HS</small>
+                                </td>
+                                <td>
+                                    <strong>@(m.HomeTeam != null ? m.HomeTeam.Name : m.HomeTeamPlaceholder)</strong>
+                                    <span class="text-muted mx-1">vs</span>
+                                    <strong>@(m.AwayTeam != null ? m.AwayTeam.Name : m.AwayTeamPlaceholder)</strong>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-primary fw-bold px-3" @onclick="() => PrepareEdit(m)">✏️ Editar</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code
+{
+    private Match newMatch = new() { Date = DateTime.Now, Phase = "16avos de Final", IsFinished = false };
+    private List<Team> teams = new();
+    private List<Match> existingMatches = new();
+    private bool showSuccessAlert = false;
+    private bool isEditing = false;
+    private bool isReady = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Validamos seguridad usando exactamente tus credenciales de sesión
+            await Session.EnsureUserLoadedAsync();
+
+            if (!Session.IsSuperAdmin)
+            {
+                Console.WriteLine("⛔ ACCESO DENEGADO (PARTIDOS): Redirigiendo al login...");
+                NavManager.NavigateTo("/login");
+                return;
+            }
+
+            // Si pasa la seguridad, cargamos los datos directo de la BD
+            await LoadData();
+
+            isReady = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            teams = await Context.Teams.OrderBy(t => t.Name).ToListAsync();
+
+            // Traemos partidos no finalizados que no contengan "Jornada" en su Phase
+            existingMatches = await Context.Matches
+                .Include(m => m.HomeTeam)
+                .Include(m => m.AwayTeam)
+                .Where(m => m.IsFinished == false && (m.Phase == null || !m.Phase.Contains("Jornada")))
+                .OrderBy(m => m.Date)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ ERROR AL CARGAR DATOS EN ADMIN PARTIDOS: {ex.Message}");
+        }
+    }
+
+    private async Task HandleSaveMatch()
+    {
+        try
+        {
+            if (isEditing)
+            {
+                Context.Matches.Update(newMatch);
+            }
+            else
+            {
+                Context.Matches.Add(newMatch);
+            }
+
+            await Context.SaveChangesAsync();
+
+            showSuccessAlert = true;
+            isEditing = false;
+
+            // Reiniciamos formulario y recargamos tabla limpia
+            newMatch = new() { Date = DateTime.Now, Phase = "16avos de Final", IsFinished = false };
+            await LoadData();
+
+            _ = Task.Delay(3000).ContinueWith(_ => { showSuccessAlert = false; InvokeAsync(StateHasChanged); });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al guardar partido: {ex.Message}");
+        }
+    }
+
+    private void PrepareEdit(Match match)
+    {
+        newMatch = match;
+        isEditing = true;
+        showSuccessAlert = false;
+    }
+
+    private async Task CancelEdit()
+    {
+        newMatch = new() { Date = DateTime.Now, Phase = "16avos de Final", IsFinished = false };
+        isEditing = false;
+        await LoadData(); // Revertimos cambios locales de EF Tracker en memoria
+    }
+}
