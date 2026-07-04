@@ -110,17 +110,21 @@
                     .Select(t => t.Id)
                     .ToList();
 
-                // 2. Ahora filtramos los partidos usando esos IDs
-                var partidosFiltrados = matches
-                    .Where(m => m.Phase != null && m.Phase.Contains(nombreFaseString, StringComparison.OrdinalIgnoreCase))
-                    .Where(m =>
-                    {
-                        // Si es eliminatoria (Octavos, Cuartos, etc.), pasan todos los de esa fase directamente
-                        if (esEliminatoria) return true;
+                // 2. Ahora filtramos los partidos usando esos IDs             
+                IEnumerable<Match>? partidosFiltrados = matches
+                        .Where(m => m.Phase != null &&
+                        (nombreFaseString.Equals("Final", StringComparison.OrdinalIgnoreCase)
+                            ? m.Phase.Equals(nombreFaseString, StringComparison.OrdinalIgnoreCase) // Comparación exacta para la Final
+                            : m.Phase.Contains(nombreFaseString, StringComparison.OrdinalIgnoreCase))) // Contains para el resto (Jornadas, Octavos, etc.)
+                        .Where(m =>
+                        {
+                            // Si es eliminatoria, pasan todos los de esa fase directamente
+                            if (esEliminatoria) return true;
 
-                        // Si es fase de grupos, el partido es válido si el local O el visitante pertenecen al grupo activo
-                        return idsEquiposDelGrupo.Contains(m.HomeTeamId ?? 0) || idsEquiposDelGrupo.Contains(m.AwayTeamId ?? 0);
-                    });
+                            // Si es fase de grupos, el partido es válido si el local O el visitante pertenecen al grupo activo
+                            return idsEquiposDelGrupo.Contains(m.HomeTeamId ?? 0) || idsEquiposDelGrupo.Contains(m.AwayTeamId ?? 0);
+                        });
+               
             }
 
             @if (partidosFiltrados.Any())
