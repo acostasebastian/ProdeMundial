@@ -13,6 +13,8 @@ namespace ProdeMundial.Domain.Enum
         Octavos = 5,
         Cuartos = 6,
         Semifinal = 7,
-        Final = 8
+        TercerCuarto = 8,
+        Final = 9
+        
     }
 }
